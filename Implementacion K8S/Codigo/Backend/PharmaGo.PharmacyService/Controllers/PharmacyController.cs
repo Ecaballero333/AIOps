@@ -1,3 +1,4 @@
+using InstrumentationInterface;
 using Microsoft.AspNetCore.Mvc;
 using PharmaGo.Domain.Entities;
 using PharmaGo.Domain.SearchCriterias;
@@ -15,10 +16,12 @@ namespace PharmaGo.PharmacyService.Controllers
     public class PharmacyController : Controller
     {
         private readonly IPharmacyManager _pharmacyManager;
+        private readonly IStructuredLogger _structuredLogger;
 
-        public PharmacyController(IPharmacyManager pharmacyManager)
+        public PharmacyController(IPharmacyManager pharmacyManager, IStructuredLogger structuredLogger)
         {
             _pharmacyManager = pharmacyManager;
+            _structuredLogger = structuredLogger;
         }
 
         [HttpGet]
@@ -41,25 +44,121 @@ namespace PharmaGo.PharmacyService.Controllers
         [AuthorizationFilter(new string[] { nameof(RoleType.Administrator) })]
         public IActionResult Create([FromBody] PharmacyModel pharmacyModel)
         {
-            Pharmacy pharmacyCreated = _pharmacyManager.Create(pharmacyModel.ToEntity());
-            PharmacyDetailModel pharmacyResponse = new PharmacyDetailModel(pharmacyCreated);
-            return Ok(pharmacyResponse);
+            try
+            {
+                Pharmacy pharmacyCreated = _pharmacyManager.Create(pharmacyModel.ToEntity());
+                PharmacyDetailModel pharmacyResponse = new PharmacyDetailModel(pharmacyCreated);
+                _structuredLogger.LogInformation(
+                    "Pharmacy created",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_create",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "create_pharmacy",
+                        ["db_operation"] = "insert_pharmacy",
+                        ["outcome"] = "success",
+                        ["pharmacy_id"] = pharmacyCreated.Id,
+                        ["pharmacy_name"] = pharmacyCreated.Name
+                    });
+                return Ok(pharmacyResponse);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Pharmacy creation failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_create_fail",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "create_pharmacy",
+                        ["db_operation"] = "insert_pharmacy",
+                        ["outcome"] = "failed",
+                        ["pharmacy_name"] = pharmacyModel?.Name ?? "",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpPut("{id}")]
         [AuthorizationFilter(new string[] { nameof(RoleType.Administrator) })]
         public IActionResult Update([FromRoute] int id, [FromBody] PharmacyModel updatedPharmacy)
         {
-            Pharmacy pharmacy = _pharmacyManager.Update(id, updatedPharmacy.ToEntity());
-            return Ok(new PharmacyDetailModel(pharmacy));
+            try
+            {
+                Pharmacy pharmacy = _pharmacyManager.Update(id, updatedPharmacy.ToEntity());
+                _structuredLogger.LogInformation(
+                    "Pharmacy updated",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_update",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "update_pharmacy",
+                        ["db_operation"] = "update_pharmacy",
+                        ["outcome"] = "success",
+                        ["pharmacy_id"] = pharmacy.Id,
+                        ["pharmacy_name"] = pharmacy.Name
+                    });
+                return Ok(new PharmacyDetailModel(pharmacy));
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Pharmacy update failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_update_fail",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "update_pharmacy",
+                        ["db_operation"] = "update_pharmacy",
+                        ["outcome"] = "failed",
+                        ["pharmacy_id"] = id,
+                        ["pharmacy_name"] = updatedPharmacy?.Name ?? "",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpDelete("{id}")]
         [AuthorizationFilter(new string[] { nameof(RoleType.Administrator) })]
         public IActionResult Delete([FromRoute] int id)
         {
-            _pharmacyManager.Delete(id);
-            return Ok(true);
+            try
+            {
+                _pharmacyManager.Delete(id);
+                _structuredLogger.LogInformation(
+                    "Pharmacy deleted",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_delete",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "delete_pharmacy",
+                        ["db_operation"] = "delete_pharmacy",
+                        ["outcome"] = "success",
+                        ["pharmacy_id"] = id
+                    });
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Pharmacy deletion failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_delete_fail",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "delete_pharmacy",
+                        ["db_operation"] = "delete_pharmacy",
+                        ["outcome"] = "failed",
+                        ["pharmacy_id"] = id,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
     }
 }
