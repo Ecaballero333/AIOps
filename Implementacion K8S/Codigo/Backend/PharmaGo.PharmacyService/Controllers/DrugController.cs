@@ -55,10 +55,48 @@ namespace PharmaGo.PharmacyService.Controllers
         [AuthorizationFilter(new string[] { nameof(RoleType.Employee) })]
         public IActionResult Create([FromBody] DrugModel drugModel)
         {
-            string token = HttpContext.Request.Headers["Authorization"];
-            Drug drugCreated = _drugManager.Create(drugModel.ToEntity(), token);
-            DrugDetailModel drugResponse = new DrugDetailModel(drugCreated);
-            return Ok(drugResponse);
+            try
+            {
+                string token = HttpContext.Request.Headers["Authorization"];
+                Drug drugCreated = _drugManager.Create(drugModel.ToEntity(), token);
+                DrugDetailModel drugResponse = new DrugDetailModel(drugCreated);
+                _structuredLogger.LogInformation(
+                    "Drug created",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_create",
+                        ["component"] = "DrugController",
+                        ["operation"] = "create_drug",
+                        ["db_operation"] = "insert_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = drugCreated.Id,
+                        ["drug_code"] = drugCreated.Code,
+                        ["drug_name"] = drugCreated.Name,
+                        ["pharmacy_name"] = drugModel.PharmacyName
+                    });
+                return Ok(drugResponse);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Drug creation failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_create_fail",
+                        ["component"] = "DrugController",
+                        ["operation"] = "create_drug",
+                        ["db_operation"] = "insert_drug",
+                        ["outcome"] = "failed",
+                        ["drug_code"] = drugModel?.Code ?? "",
+                        ["drug_name"] = drugModel?.Name ?? "",
+                        ["pharmacy_name"] = drugModel?.PharmacyName ?? "",
+                        ["presentation_id"] = drugModel?.PresentationId ?? 0,
+                        ["unit_measure_id"] = drugModel?.UnitMeasureId ?? 0,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpPut("{id}")]
