@@ -1,3 +1,4 @@
+using InstrumentationInterface;
 using Microsoft.AspNetCore.Mvc;
 using PharmaGo.Domain.Entities;
 using PharmaGo.Domain.SearchCriterias;
@@ -15,10 +16,12 @@ namespace PharmaGo.PharmacyService.Controllers
     public class DrugController : Controller
     {
         private readonly IDrugManager _drugManager;
+        private readonly IStructuredLogger _structuredLogger;
 
-        public DrugController(IDrugManager manager)
+        public DrugController(IDrugManager manager, IStructuredLogger structuredLogger)
         {
             _drugManager = manager;
+            _structuredLogger = structuredLogger;
         }
 
         [HttpGet]
@@ -62,16 +65,80 @@ namespace PharmaGo.PharmacyService.Controllers
         [AuthorizationFilter(new string[] { nameof(RoleType.Administrator) })]
         public IActionResult Update([FromRoute] int id, [FromBody] UpdateDrugModel updatedDrug)
         {
-            Drug drug = _drugManager.Update(id, updatedDrug.ToEntity());
-            return Ok(new DrugDetailModel(drug));
+            try
+            {
+                Drug drug = _drugManager.Update(id, updatedDrug.ToEntity());
+                _structuredLogger.LogInformation(
+                    "Drug updated",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_update",
+                        ["component"] = "DrugController",
+                        ["operation"] = "update_drug",
+                        ["db_operation"] = "update_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = drug.Id,
+                        ["drug_name"] = drug.Name
+                    });
+                return Ok(new DrugDetailModel(drug));
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Drug update failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_update_fail",
+                        ["component"] = "DrugController",
+                        ["operation"] = "update_drug",
+                        ["db_operation"] = "update_drug",
+                        ["outcome"] = "failed",
+                        ["drug_id"] = id,
+                        ["drug_name"] = updatedDrug?.Name ?? "",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpDelete("{id}")]
         [AuthorizationFilter(new string[] { nameof(RoleType.Employee) })]
         public IActionResult Delete([FromRoute] int id)
         {
-            _drugManager.Delete(id);
-            return Ok(true);
+            try
+            {
+                _drugManager.Delete(id);
+                _structuredLogger.LogInformation(
+                    "Drug deleted",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_delete",
+                        ["component"] = "DrugController",
+                        ["operation"] = "delete_drug",
+                        ["db_operation"] = "delete_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = id
+                    });
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Drug deletion failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_delete_fail",
+                        ["component"] = "DrugController",
+                        ["operation"] = "delete_drug",
+                        ["db_operation"] = "delete_drug",
+                        ["outcome"] = "failed",
+                        ["drug_id"] = id,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
     }
 }
