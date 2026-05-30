@@ -4,6 +4,7 @@ using PharmaGo.Domain.SearchCriterias;
 using PharmaGo.Exceptions;
 using PharmaGo.PharmacyService.IBusinessLogic;
 using PharmaGo.IDataAccess;
+using InstrumentationInterface;
 
 namespace PharmaGo.PharmacyService.BusinessLogic
 {
@@ -15,13 +16,15 @@ namespace PharmaGo.PharmacyService.BusinessLogic
         private readonly IRepository<Presentation> _presentationRepository;
         private readonly IRepository<Session> _sessionRepository;
         private readonly IRepository<User> _userRepository;
+        private readonly IStructuredLogger _structuredLogger;
 
         public DrugManager(IRepository<Drug> drugRepo, 
                            IRepository<Pharmacy> pharmacyRepository, 
                            IRepository<UnitMeasure> unitMeasureRepository, 
                            IRepository<Presentation> presentationRepository,
                            IRepository<Session> sessionRespository,
-                           IRepository<User> userRespository)
+                           IRepository<User> userRespository,
+                           IStructuredLogger structuredLogger)
         {
             _drugRepository = drugRepo;
             _pharmacyRepository = pharmacyRepository;
@@ -29,6 +32,7 @@ namespace PharmaGo.PharmacyService.BusinessLogic
             _presentationRepository = presentationRepository;
             _sessionRepository = sessionRespository;
             _userRepository = userRespository;
+            _structuredLogger = structuredLogger;
         }
 
         public IEnumerable<Drug> GetAll(DrugSearchCriteria drugSearchCriteria)
@@ -67,36 +71,113 @@ namespace PharmaGo.PharmacyService.BusinessLogic
 
         public Drug Create(Drug drug, string token)
         {
-            if (drug == null)
+            Pharmacy pharmacyOfDrug;
+            UnitMeasure unitMeasureOfDrug;
+            Presentation presentationOfDrug;
+            try
             {
-                throw new ResourceNotFoundException("Please create a drug before inserting it.");
-            }
-            drug.ValidOrFail();
+                if (drug == null)
+                {
+                    throw new ResourceNotFoundException("Please create a drug before inserting it.");
+                }
+                drug.ValidOrFail();
 
-            var guidToken = new Guid(token);
-            Session session = _sessionRepository.GetOneByExpression(s => s.Token == guidToken);
-            var userId = session.UserId;
-            User user = _userRepository.GetOneDetailByExpression(u => u.Id == userId);
+                var guidToken = new Guid(token);
+                Session session = _sessionRepository.GetOneByExpression(s => s.Token == guidToken);
+                var userId = session.UserId;
+                User user = _userRepository.GetOneDetailByExpression(u => u.Id == userId);
 
-            Pharmacy pharmacyOfDrug = _pharmacyRepository.GetOneByExpression(p => p.Name == user.Pharmacy.Name);
-            if (pharmacyOfDrug == null)
-            {
-                throw new ResourceNotFoundException("The pharmacy of the drug does not exist.");
-            }
+                pharmacyOfDrug = _pharmacyRepository.GetOneByExpression(p => p.Name == user.Pharmacy.Name);
+                if (pharmacyOfDrug == null)
+                {
+                    throw new ResourceNotFoundException("The pharmacy of the drug does not exist.");
+                }
 
-            if (_drugRepository.Exists(d => d.Code == drug.Code && d.Pharmacy.Name == pharmacyOfDrug.Name))
-            {
-                throw new InvalidResourceException("The drug already exists in that pharmacy.");
+                if (_drugRepository.Exists(d => d.Code == drug.Code && d.Pharmacy.Name == pharmacyOfDrug.Name))
+                {
+                    throw new InvalidResourceException("The drug already exists in that pharmacy.");
+                }
+                unitMeasureOfDrug = _unitMeasureRepository.GetOneByExpression(u => u.Id == drug.UnitMeasure.Id);
+                if (unitMeasureOfDrug == null)
+                {
+                    throw new ResourceNotFoundException("The unit measure of the drug does not exist.");
+                }
+                presentationOfDrug = _presentationRepository.GetOneByExpression(p => p.Id == drug.Presentation.Id);
+                if (presentationOfDrug == null)
+                {
+                    throw new ResourceNotFoundException("The presentation of the drug does not exist.");
+                }
+
+                _structuredLogger.LogInformation(
+                    "Drug create business validation completed",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_business_validation",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "create_drug",
+                        ["outcome"] = "success",
+                        ["drug_code"] = drug.Code,
+                        ["drug_name"] = drug.Name,
+                        ["pharmacy_id"] = pharmacyOfDrug.Id,
+                        ["pharmacy_name"] = pharmacyOfDrug.Name,
+                        ["unit_measure_id"] = unitMeasureOfDrug.Id,
+                        ["unit_measure_name"] = unitMeasureOfDrug.Name,
+                        ["presentation_id"] = presentationOfDrug.Id,
+                        ["presentation_name"] = presentationOfDrug.Name
+                    });
             }
-            UnitMeasure unitMeasureOfDrug = _unitMeasureRepository.GetOneByExpression(u => u.Id == drug.UnitMeasure.Id);
-            if (unitMeasureOfDrug == null)
+            catch (ResourceNotFoundException ex)
             {
-                throw new ResourceNotFoundException("The unit measure of the drug does not exist.");
+                _structuredLogger.LogError(
+                    "Drug create business validation failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_business_validation_fail",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "create_drug",
+                        ["outcome"] = "failed",
+                        ["drug_code"] = drug?.Code ?? "unknown",
+                        ["drug_name"] = drug?.Name ?? "unknown",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
             }
-            Presentation presentationOfDrug = _presentationRepository.GetOneByExpression(p => p.Id == drug.Presentation.Id);
-            if (presentationOfDrug == null)
+            catch (InvalidResourceException ex)
             {
-                throw new ResourceNotFoundException("The presentation of the drug does not exist.");
+                _structuredLogger.LogError(
+                    "Drug create business validation failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_business_validation_fail",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "create_drug",
+                        ["outcome"] = "failed",
+                        ["drug_code"] = drug?.Code ?? "unknown",
+                        ["drug_name"] = drug?.Name ?? "unknown",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogError(
+                    "Drug database lookup failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_db_lookup_fail",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "create_drug",
+                        ["db_operation"] = "lookup_drug_dependencies",
+                        ["outcome"] = "failed",
+                        ["drug_code"] = drug?.Code ?? "unknown",
+                        ["drug_name"] = drug?.Name ?? "unknown",
+                        ["error_type"] = ex.GetType().Name,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
             }
 
             drug.UnitMeasure.Id = unitMeasureOfDrug.Id;
@@ -104,8 +185,46 @@ namespace PharmaGo.PharmacyService.BusinessLogic
             drug.Presentation.Id = presentationOfDrug.Id;
             drug.Presentation.Name = presentationOfDrug.Name;
             drug.Pharmacy.Id = pharmacyOfDrug.Id;
-            _drugRepository.InsertOne(drug);
-            _drugRepository.Save();
+            try
+            {
+                _drugRepository.InsertOne(drug);
+                _drugRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Drug persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_db_insert",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "create_drug",
+                        ["db_operation"] = "insert_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = drug.Id,
+                        ["drug_code"] = drug.Code,
+                        ["drug_name"] = drug.Name,
+                        ["pharmacy_id"] = pharmacyOfDrug.Id,
+                        ["pharmacy_name"] = pharmacyOfDrug.Name
+                    });
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogError(
+                    "Drug database insert failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_db_insert_fail",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "create_drug",
+                        ["db_operation"] = "insert_drug",
+                        ["outcome"] = "failed",
+                        ["drug_code"] = drug.Code,
+                        ["drug_name"] = drug.Name,
+                        ["pharmacy_id"] = pharmacyOfDrug.Id,
+                        ["pharmacy_name"] = pharmacyOfDrug.Name,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
             return drug;
         }
 

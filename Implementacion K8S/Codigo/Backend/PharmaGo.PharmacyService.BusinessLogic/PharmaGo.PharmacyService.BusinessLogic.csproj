@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ExportationModel\ExportationModel.csproj" />
+    <ProjectReference Include="..\InstrumentationInterface\InstrumentationInterface.csproj" />
     <ProjectReference Include="..\PharmaGo.Domain\PharmaGo.Domain.csproj" />
     <ProjectReference Include="..\PharmaGo.Exceptions\PharmaGo.Exceptions.csproj" />
     <ProjectReference Include="..\PharmaGo.PharmacyService.IBusinessLogic\PharmaGo.PharmacyService.IBusinessLogic.csproj" />
