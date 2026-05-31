@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using InstrumentationInterface;
+using PharmaGo.Domain.Entities;
+using PharmaGo.IDataAccess;
 using PharmaGo.UsersService.IBusinessLogic;
 
 namespace PharmaGo.UsersService.Filters
@@ -57,6 +59,7 @@ namespace PharmaGo.UsersService.Filters
         private static void LogAuthorizationSuccess(ActionExecutingContext context)
         {
             var logger = GetStructuredLogger(context);
+            User? user = GetAuthenticatedUser(context);
             logger?.LogInformation(
                 "Authorization succeeded",
                 new Dictionary<string, object>
@@ -65,8 +68,29 @@ namespace PharmaGo.UsersService.Filters
                     ["component"] = "AuthorizationFilter",
                     ["operation"] = "authorize_request",
                     ["outcome"] = "success",
-                    ["request_path"] = context.HttpContext.Request.Path.Value ?? "unknown"
+                    ["request_path"] = context.HttpContext.Request.Path.Value ?? "unknown",
+                    ["user_id"] = user?.Id ?? 0,
+                    ["user_name"] = user?.UserName ?? "unknown",
+                    ["role"] = user?.Role?.Name ?? "unknown"
                 });
+        }
+
+        private static User? GetAuthenticatedUser(ActionExecutingContext context)
+        {
+            try
+            {
+                string token = context.HttpContext.Request.Headers["Authorization"];
+                var guidToken = new Guid(token);
+                var sessionRepository = (IRepository<Session>)context.HttpContext.RequestServices.GetService(typeof(IRepository<Session>));
+                var userRepository = (IRepository<User>)context.HttpContext.RequestServices.GetService(typeof(IRepository<User>));
+                Session session = sessionRepository.GetOneByExpression(x => x.Token == guidToken);
+                if (session == null) return null;
+                return userRepository.GetOneDetailByExpression(x => x.Id == session.UserId);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static void LogAuthorizationFailure(ActionExecutingContext context, string pharmaBiz, string dbOperation, string message, Exception exception)
