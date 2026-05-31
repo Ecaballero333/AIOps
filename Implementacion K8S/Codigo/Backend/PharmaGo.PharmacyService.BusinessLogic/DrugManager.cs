@@ -230,15 +230,46 @@ namespace PharmaGo.PharmacyService.BusinessLogic
 
         public Drug Update(int id, Drug updatedDrug) 
         {
-            if(updatedDrug == null)
+            Drug drugSaved;
+            try
             {
-                throw new ResourceNotFoundException("The updated drug is invalid.");
+                if(updatedDrug == null)
+                {
+                    throw new ResourceNotFoundException("The updated drug is invalid.");
+                }
+                updatedDrug.ValidOrFail();
+                drugSaved = _drugRepository.GetOneByExpression(d => d.Id == id);
+                if(drugSaved == null)
+                {
+                    throw new ResourceNotFoundException("The drug to update does not exist.");
+                }
+                _structuredLogger.LogInformation(
+                    "Drug update business validation completed",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_business_validation",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "update_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = id,
+                        ["drug_code"] = updatedDrug.Code,
+                        ["drug_name"] = updatedDrug.Name
+                    });
             }
-            updatedDrug.ValidOrFail();
-            var drugSaved = _drugRepository.GetOneByExpression(d => d.Id == id);
-            if(drugSaved == null)
+            catch (ResourceNotFoundException ex)
             {
-                throw new ResourceNotFoundException("The drug to update does not exist.");
+                LogDrugBusinessFailure("update_drug", id, updatedDrug?.Code, updatedDrug?.Name, ex);
+                throw;
+            }
+            catch (InvalidResourceException ex)
+            {
+                LogDrugBusinessFailure("update_drug", id, updatedDrug?.Code, updatedDrug?.Name, ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                LogDrugLookupFailure("update_drug", "lookup_drug", id, updatedDrug?.Code, updatedDrug?.Name, ex);
+                throw;
             }
             drugSaved.Code = updatedDrug.Code;
             drugSaved.Name = updatedDrug.Name;
@@ -246,21 +277,135 @@ namespace PharmaGo.PharmacyService.BusinessLogic
             drugSaved.Quantity = updatedDrug.Quantity;
             drugSaved.Price = updatedDrug.Price;
             drugSaved.Prescription = updatedDrug.Prescription;
-            _drugRepository.UpdateOne(drugSaved);
-            _drugRepository.Save();
+            try
+            {
+                _drugRepository.UpdateOne(drugSaved);
+                _drugRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Drug updated in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_db_update",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "update_drug",
+                        ["db_operation"] = "update_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = drugSaved.Id,
+                        ["drug_code"] = drugSaved.Code,
+                        ["drug_name"] = drugSaved.Name
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogDrugPersistenceFailure("drug_db_update_fail", "update_drug", "update_drug", drugSaved.Id, drugSaved.Code, drugSaved.Name, ex);
+                throw;
+            }
             return drugSaved;
         }
 
         public void Delete(int id)
         {
-            var drugSaved = _drugRepository.GetOneByExpression(d => d.Id == id);
-            if(drugSaved == null)
+            Drug drugSaved;
+            try
             {
-                throw new ResourceNotFoundException("The drug to delete does not exist.");
+                drugSaved = _drugRepository.GetOneByExpression(d => d.Id == id);
+                if(drugSaved == null)
+                {
+                    throw new ResourceNotFoundException("The drug to delete does not exist.");
+                }
+            }
+            catch (ResourceNotFoundException ex)
+            {
+                LogDrugBusinessFailure("delete_drug", id, null, null, ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                LogDrugLookupFailure("delete_drug", "lookup_drug", id, null, null, ex);
+                throw;
             }
             drugSaved.Deleted = true;
-            _drugRepository.UpdateOne(drugSaved);
-            _drugRepository.Save();
+            try
+            {
+                _drugRepository.UpdateOne(drugSaved);
+                _drugRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Drug deleted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_db_delete",
+                        ["component"] = "DrugManager",
+                        ["operation"] = "delete_drug",
+                        ["db_operation"] = "delete_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = drugSaved.Id,
+                        ["drug_code"] = drugSaved.Code,
+                        ["drug_name"] = drugSaved.Name
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogDrugPersistenceFailure("drug_db_delete_fail", "delete_drug", "delete_drug", drugSaved.Id, drugSaved.Code, drugSaved.Name, ex);
+                throw;
+            }
+        }
+
+        private void LogDrugBusinessFailure(string operation, int drugId, string drugCode, string drugName, Exception ex)
+        {
+            _structuredLogger.LogError(
+                "Drug business validation failed",
+                ex,
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "drug_business_validation_fail",
+                    ["component"] = "DrugManager",
+                    ["operation"] = operation,
+                    ["outcome"] = "failed",
+                    ["drug_id"] = drugId,
+                    ["drug_code"] = drugCode ?? "unknown",
+                    ["drug_name"] = drugName ?? "unknown",
+                    ["error_message"] = ex.Message
+                });
+        }
+
+        private void LogDrugLookupFailure(string operation, string dbOperation, int drugId, string drugCode, string drugName, Exception ex)
+        {
+            _structuredLogger.LogError(
+                "Drug database lookup failed",
+                ex,
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "drug_db_lookup_fail",
+                    ["component"] = "DrugManager",
+                    ["operation"] = operation,
+                    ["db_operation"] = dbOperation,
+                    ["outcome"] = "failed",
+                    ["drug_id"] = drugId,
+                    ["drug_code"] = drugCode ?? "unknown",
+                    ["drug_name"] = drugName ?? "unknown",
+                    ["error_type"] = ex.GetType().Name,
+                    ["error_message"] = ex.Message
+                });
+        }
+
+        private void LogDrugPersistenceFailure(string pharmaBiz, string operation, string dbOperation, int drugId, string drugCode, string drugName, Exception ex)
+        {
+            _structuredLogger.LogError(
+                "Drug database operation failed",
+                ex,
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = pharmaBiz,
+                    ["component"] = "DrugManager",
+                    ["operation"] = operation,
+                    ["db_operation"] = dbOperation,
+                    ["outcome"] = "failed",
+                    ["drug_id"] = drugId,
+                    ["drug_code"] = drugCode ?? "unknown",
+                    ["drug_name"] = drugName ?? "unknown",
+                    ["error_type"] = ex.GetType().Name,
+                    ["error_message"] = ex.Message
+                });
         }
 
         public IEnumerable<DrugExportationModel> GetDrugsToExport(string token)
