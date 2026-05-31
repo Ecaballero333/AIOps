@@ -32,8 +32,8 @@ data:
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
+                "drawStyle": "bars",
+                "fillOpacity": 70,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -41,7 +41,7 @@ data:
                   "viz": false
                 },
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 0,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -66,7 +66,6 @@ data:
                   }
                 ]
               },
-              "decimals": 0,
               "unit": "none"
             },
             "overrides": []
@@ -99,14 +98,14 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum by (outcome) (increase(pharmago_login_attempts_total[$__range])))",
-              "instant": true,
+              "expr": "round(sum by (outcome) (increase(pharmago_login_attempts_total[1m])))",
+              "interval": "1m",
               "legendFormat": "login {{outcome}}",
               "refId": "A"
             }
           ],
           "title": "Intentos de login por resultado",
-          "type": "barchart"
+          "type": "timeseries"
         },
         {
           "datasource": {
@@ -136,7 +135,8 @@ data:
                   }
                 ]
               },
-              "unit": "ops"
+              "decimals": 0,
+              "unit": "none"
             },
             "overrides": []
           },
@@ -165,7 +165,8 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(rate(pharmago_business_events_total{outcome=\"failed\"}[5m]))",
+              "expr": "round(sum(increase(pharmago_business_events_total{outcome=\"failed\"}[$__range])))",
+              "instant": true,
               "refId": "A"
             }
           ],
@@ -188,8 +189,8 @@ data:
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
+                "drawStyle": "bars",
+                "fillOpacity": 70,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -197,7 +198,7 @@ data:
                   "viz": false
                 },
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 0,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -222,7 +223,7 @@ data:
                   }
                 ]
               },
-              "unit": "ops"
+              "unit": "none"
             },
             "overrides": []
           },
@@ -254,7 +255,8 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (event, outcome) (rate(pharmago_business_events_total[5m]))",
+              "expr": "round(sum by (event, outcome) (increase(pharmago_business_events_total[1m])))",
+              "interval": "1m",
               "legendFormat": "{{event}} {{outcome}}",
               "refId": "A"
             }
@@ -282,7 +284,8 @@ data:
                   }
                 ]
               },
-              "unit": "short"
+              "decimals": 0,
+              "unit": "none"
             },
             "overrides": []
           },
@@ -313,7 +316,8 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "pharmago_purchases_created_total",
+              "expr": "round(sum(increase(pharmago_purchases_created_total[$__range])))",
+              "instant": true,
               "refId": "A"
             }
           ],
@@ -340,7 +344,8 @@ data:
                   }
                 ]
               },
-              "unit": "currencyUYU"
+              "decimals": 0,
+              "unit": "currencyUSD"
             },
             "overrides": []
           },
@@ -371,7 +376,8 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "pharmago_purchase_amount_total",
+              "expr": "sum(pharmago_purchase_amount_total)",
+              "instant": true,
               "refId": "A"
             }
           ],
@@ -394,8 +400,8 @@ data:
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
+                "drawStyle": "bars",
+                "fillOpacity": 70,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -403,7 +409,7 @@ data:
                   "viz": false
                 },
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 0,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -428,7 +434,7 @@ data:
                   }
                 ]
               },
-              "unit": "short"
+              "unit": "none"
             },
             "overrides": []
           },
@@ -460,21 +466,13 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "increase(pharmago_purchase_items_total[1h])",
-              "legendFormat": "items ultima hora",
+              "expr": "round(sum(increase(pharmago_purchases_created_total[1m])))",
+              "interval": "1m",
+              "legendFormat": "compras realizadas",
               "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "increase(pharmago_purchases_created_total[1h])",
-              "legendFormat": "compras ultima hora",
-              "refId": "B"
             }
           ],
-          "title": "Compras e items en la ultima hora",
+          "title": "Compras realizadas",
           "type": "timeseries"
         },
         {
@@ -487,8 +485,38 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "bars",
+                "fillOpacity": 70,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 0,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
               "mappings": [],
-              "unit": "short"
+              "unit": "none"
             },
             "overrides": []
           },
@@ -501,24 +529,16 @@ data:
           "id": 7,
           "options": {
             "legend": {
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true,
-              "values": [
-                "value",
-                "percent"
-              ]
-            },
-            "pieType": "pie",
-            "reduceOptions": {
               "calcs": [
-                "lastNotNull"
+                "lastNotNull",
+                "sum"
               ],
-              "fields": "",
-              "values": false
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
             },
             "tooltip": {
-              "mode": "single",
+              "mode": "multi",
               "sort": "desc"
             }
           },
@@ -528,13 +548,14 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (status) (pharmago_purchase_status_changes_total)",
+              "expr": "round(sum by (status) (increase(pharmago_purchase_status_changes_total[1m])))",
+              "interval": "1m",
               "legendFormat": "{{status}}",
               "refId": "A"
             }
           ],
           "title": "Cambios de estado de compra",
-          "type": "piechart"
+          "type": "timeseries"
         }
       ],
       "refresh": "5s",

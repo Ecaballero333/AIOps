@@ -54,7 +54,7 @@ namespace Instrumentation
 
             _purchaseAmountCounter = _meter.CreateCounter<double>(
                 "pharmago_purchase_amount_total",
-                unit: "UYU",
+                unit: "1",
                 description: "Total purchased amount accumulated by successful purchase creation"
             );
 
