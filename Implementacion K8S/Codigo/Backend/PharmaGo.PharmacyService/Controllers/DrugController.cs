@@ -27,9 +27,43 @@ namespace PharmaGo.PharmacyService.Controllers
         [HttpGet]
         public IActionResult GetAll([FromQuery] DrugSearchCriteria drugSearchCriteria)
         {
-            IEnumerable<Drug> drugs = _drugManager.GetAll(drugSearchCriteria);
-            IEnumerable<DrugBasicModel> drugsToReturn = drugs.Select(d => new DrugBasicModel(d));
-            return Ok(drugsToReturn);
+            try
+            {
+                IEnumerable<Drug> drugs = _drugManager.GetAll(drugSearchCriteria);
+                List<DrugBasicModel> drugsToReturn = drugs.Select(d => new DrugBasicModel(d)).ToList();
+                _structuredLogger.LogInformation(
+                    "Drugs retrieved",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_list",
+                        ["component"] = "DrugController",
+                        ["operation"] = "list_drugs",
+                        ["db_operation"] = "read_drugs",
+                        ["outcome"] = "success",
+                        ["drugs_count"] = drugsToReturn.Count,
+                        ["drug_name"] = drugSearchCriteria?.Name ?? "",
+                        ["pharmacy_id"] = drugSearchCriteria?.PharmacyId ?? 0
+                    });
+                return Ok(drugsToReturn);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Drugs retrieval failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_list_fail",
+                        ["component"] = "DrugController",
+                        ["operation"] = "list_drugs",
+                        ["db_operation"] = "read_drugs",
+                        ["outcome"] = "failed",
+                        ["drug_name"] = drugSearchCriteria?.Name ?? "",
+                        ["pharmacy_id"] = drugSearchCriteria?.PharmacyId ?? 0,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpGet]
@@ -37,18 +71,81 @@ namespace PharmaGo.PharmacyService.Controllers
         [AuthorizationFilter(new string[] { nameof(RoleType.Employee) })]
         public IActionResult User()
         {
-            string token = HttpContext.Request.Headers["Authorization"];
-            IEnumerable<Drug> drugs = _drugManager.GetAllByUser(token);
-            IEnumerable<DrugBasicModel> drugsToReturn = drugs.Select(d => new DrugBasicModel(d));
-            return Ok(drugsToReturn);
+            try
+            {
+                string token = HttpContext.Request.Headers["Authorization"];
+                IEnumerable<Drug> drugs = _drugManager.GetAllByUser(token);
+                List<DrugBasicModel> drugsToReturn = drugs.Select(d => new DrugBasicModel(d)).ToList();
+                _structuredLogger.LogInformation(
+                    "User drugs retrieved",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_list_by_user",
+                        ["component"] = "DrugController",
+                        ["operation"] = "list_drugs_by_user",
+                        ["db_operation"] = "read_drugs_by_user",
+                        ["outcome"] = "success",
+                        ["drugs_count"] = drugsToReturn.Count
+                    });
+                return Ok(drugsToReturn);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "User drugs retrieval failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_list_by_user_fail",
+                        ["component"] = "DrugController",
+                        ["operation"] = "list_drugs_by_user",
+                        ["db_operation"] = "read_drugs_by_user",
+                        ["outcome"] = "failed",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpGet("{id}")]
 
         public IActionResult GetById([FromRoute] int id)
         {
-            Drug drug = _drugManager.GetById(id);
-            return Ok(new DrugDetailModel(drug));
+            try
+            {
+                Drug drug = _drugManager.GetById(id);
+                _structuredLogger.LogInformation(
+                    "Drug retrieved by id",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_get_by_id",
+                        ["component"] = "DrugController",
+                        ["operation"] = "get_drug_by_id",
+                        ["db_operation"] = "read_drug",
+                        ["outcome"] = "success",
+                        ["drug_id"] = drug.Id,
+                        ["drug_code"] = drug.Code,
+                        ["drug_name"] = drug.Name
+                    });
+                return Ok(new DrugDetailModel(drug));
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Drug retrieval by id failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "drug_get_by_id_fail",
+                        ["component"] = "DrugController",
+                        ["operation"] = "get_drug_by_id",
+                        ["db_operation"] = "read_drug",
+                        ["outcome"] = "failed",
+                        ["drug_id"] = id,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpPost]

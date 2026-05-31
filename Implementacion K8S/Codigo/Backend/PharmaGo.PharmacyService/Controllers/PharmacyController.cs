@@ -27,17 +27,83 @@ namespace PharmaGo.PharmacyService.Controllers
         [HttpGet]
         public IActionResult GetAll([FromQuery] PharmacySearchCriteria pharmacySearchCriteria)
         {
-            IEnumerable<Pharmacy> pharmacies = _pharmacyManager.GetAll(pharmacySearchCriteria);
-            IEnumerable<PharmacyBasicModel> pharmaciesToReturn = pharmacies.Select(p => new PharmacyBasicModel(p));
-            return Ok(pharmaciesToReturn);
+            try
+            {
+                IEnumerable<Pharmacy> pharmacies = _pharmacyManager.GetAll(pharmacySearchCriteria);
+                List<PharmacyBasicModel> pharmaciesToReturn = pharmacies.Select(p => new PharmacyBasicModel(p)).ToList();
+                _structuredLogger.LogInformation(
+                    "Pharmacies retrieved",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_list",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "list_pharmacies",
+                        ["db_operation"] = "read_pharmacies",
+                        ["outcome"] = "success",
+                        ["pharmacies_count"] = pharmaciesToReturn.Count,
+                        ["pharmacy_name"] = pharmacySearchCriteria?.Name ?? "",
+                        ["pharmacy_address"] = pharmacySearchCriteria?.Address ?? ""
+                    });
+                return Ok(pharmaciesToReturn);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Pharmacies retrieval failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_list_fail",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "list_pharmacies",
+                        ["db_operation"] = "read_pharmacies",
+                        ["outcome"] = "failed",
+                        ["pharmacy_name"] = pharmacySearchCriteria?.Name ?? "",
+                        ["pharmacy_address"] = pharmacySearchCriteria?.Address ?? "",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpGet("{id}")]
         [AuthorizationFilter(new string[] { nameof(RoleType.Administrator) })]
         public IActionResult GetById([FromRoute] int id)
         {
-            Pharmacy pharmacy = _pharmacyManager.GetById(id);
-            return Ok(new PharmacyDetailModel(pharmacy));
+            try
+            {
+                Pharmacy pharmacy = _pharmacyManager.GetById(id);
+                _structuredLogger.LogInformation(
+                    "Pharmacy retrieved by id",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_get_by_id",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "get_pharmacy_by_id",
+                        ["db_operation"] = "read_pharmacy",
+                        ["outcome"] = "success",
+                        ["pharmacy_id"] = pharmacy.Id,
+                        ["pharmacy_name"] = pharmacy.Name
+                    });
+                return Ok(new PharmacyDetailModel(pharmacy));
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Pharmacy retrieval by id failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "pharmacy_get_by_id_fail",
+                        ["component"] = "PharmacyController",
+                        ["operation"] = "get_pharmacy_by_id",
+                        ["db_operation"] = "read_pharmacy",
+                        ["outcome"] = "failed",
+                        ["pharmacy_id"] = id,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpPost]

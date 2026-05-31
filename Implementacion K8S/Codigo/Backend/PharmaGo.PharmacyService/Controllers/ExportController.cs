@@ -25,13 +25,71 @@ namespace PharmaGo.PharmacyService.Controllers
         [HttpGet("exporters")]
         public IActionResult GetAllExporters()
         {
-            return Ok(_exportManager.GetAllExporters());
+            try
+            {
+                var exporters = _exportManager.GetAllExporters();
+                _structuredLogger.LogInformation(
+                    "Exporters retrieved",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "exporter_list",
+                        ["component"] = "ExportController",
+                        ["operation"] = "list_exporters",
+                        ["outcome"] = "success"
+                    });
+                return Ok(exporters);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Exporters retrieval failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "exporter_list_fail",
+                        ["component"] = "ExportController",
+                        ["operation"] = "list_exporters",
+                        ["outcome"] = "failed",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpGet("parameters")]
         public IActionResult GetParameters([FromQuery] string exporterName)
         {
-            return Ok(_exportManager.GetParameters(exporterName));
+            try
+            {
+                var parameters = _exportManager.GetParameters(exporterName);
+                _structuredLogger.LogInformation(
+                    "Exporter parameters retrieved",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "exporter_parameters",
+                        ["component"] = "ExportController",
+                        ["operation"] = "get_exporter_parameters",
+                        ["outcome"] = "success",
+                        ["exporter_name"] = exporterName ?? ""
+                    });
+                return Ok(parameters);
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogWarning(
+                    "Exporter parameters retrieval failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "exporter_parameters_fail",
+                        ["component"] = "ExportController",
+                        ["operation"] = "get_exporter_parameters",
+                        ["outcome"] = "failed",
+                        ["exporter_name"] = exporterName ?? "",
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
         }
 
         [HttpPost]
