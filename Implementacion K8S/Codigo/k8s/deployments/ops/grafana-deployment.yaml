@@ -70,6 +70,9 @@ spec:
         - name: grafana-dashboard-business
           mountPath: /etc/grafana/provisioning/dashboards/pharmago-business.json
           subPath: pharmago-business.json
+        - name: grafana-alerts-business
+          mountPath: /etc/grafana/provisioning/alerting/business-alerts.yaml
+          subPath: business-alerts.yaml
         resources:
           requests:
             memory: "256Mi"
@@ -114,3 +117,6 @@ spec:
       - name: grafana-dashboard-business
         configMap:
           name: grafana-dashboard-business
+      - name: grafana-alerts-business
+        configMap:
+          name: grafana-alerts-business
