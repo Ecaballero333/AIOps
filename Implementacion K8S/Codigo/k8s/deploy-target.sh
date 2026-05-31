@@ -4,12 +4,15 @@
 #   ./deploy-target.sh                  # despliega todos los targets conocidos
 #   ./deploy-target.sh gateway ui        # despliega solo esos componentes
 #   ./deploy-target.sh grafana kibana    # reaplica config/manifiestos y reinicia
+#
+# Al finalizar, espera unos segundos y reinicia los port-forwards locales usando ./port-forward.sh.
 
 set -Eeuo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CODE_DIR="$(dirname "$SCRIPT_DIR")"
 NAMESPACE="${NAMESPACE:-pharmago}"
+PORT_FORWARD_DELAY_SECONDS="${PORT_FORWARD_DELAY_SECONDS:-10}"
 
 STARTED_AT=$(date +%s)
 CURRENT_STEP="Inicializando"
@@ -53,6 +56,12 @@ Ejemplos:
   ./deploy-target.sh gateway
   ./deploy-target.sh ui grafana
   ./deploy-target.sh
+
+Al finalizar, el script espera unos segundos y reinicia los port-forwards locales
+usando ./port-forward.sh.
+
+Variables opcionales:
+  PORT_FORWARD_DELAY_SECONDS=15 ./deploy-target.sh ui
 EOF
 }
 
@@ -108,6 +117,24 @@ rollout_daemonset() {
     CURRENT_STEP="Esperando rollout de daemonset/$daemonset"
     log "Esperando a que daemonset/$daemonset quede listo"
     kubectl rollout status "daemonset/$daemonset" -n "$NAMESPACE" --timeout=300s
+}
+
+start_port_forward() {
+    CURRENT_STEP="Reiniciando port-forwards locales"
+
+    if [ ! -f "$SCRIPT_DIR/port-forward.sh" ]; then
+        log "No se ejecuta port-forward: $SCRIPT_DIR/port-forward.sh no existe"
+        return
+    fi
+
+    log "Esperando ${PORT_FORWARD_DELAY_SECONDS}s antes de iniciar port-forwards"
+    sleep "$PORT_FORWARD_DELAY_SECONDS"
+
+    log "Deteniendo port-forwards previos registrados por port-forward.sh"
+    bash "$SCRIPT_DIR/port-forward.sh" --stop
+
+    log "Iniciando port-forwards locales"
+    bash "$SCRIPT_DIR/port-forward.sh"
 }
 
 build_backend_image() {
@@ -344,3 +371,6 @@ echo ""
 log "Despliegue finalizado correctamente en ${DURATION}s."
 log "Estado actual de pods:"
 kubectl get pods -n "$NAMESPACE" -o wide
+
+echo ""
+start_port_forward
