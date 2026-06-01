@@ -73,6 +73,9 @@ spec:
         - name: grafana-alerts-business
           mountPath: /etc/grafana/provisioning/alerting/business-alerts.yaml
           subPath: business-alerts.yaml
+        - name: grafana-alerts-infra
+          mountPath: /etc/grafana/provisioning/alerting/infra-alerts.yaml
+          subPath: infra-alerts.yaml
         resources:
           requests:
             memory: "256Mi"
@@ -120,3 +123,6 @@ spec:
       - name: grafana-alerts-business
         configMap:
           name: grafana-alerts-business
+      - name: grafana-alerts-infra
+        configMap:
+          name: grafana-alerts-infra

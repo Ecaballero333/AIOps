@@ -1,0 +1,402 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-alerts-infra
+  namespace: pharmago
+data:
+  infra-alerts.yaml: |
+    apiVersion: 1
+    groups:
+        - orgId: 1
+          name: Infra
+          folder: PharmaGo
+          interval: 1m
+          rules:
+            - uid: ffnrfmrjbe6m8d
+              title: PharmaGo - CPU alta > 80%
+              condition: C
+              data:
+                - refId: A
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: prometheus
+                  model:
+                    disableTextWrap: false
+                    editorMode: builder
+                    expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+                    fullMetaSearch: false
+                    includeNullMetadata: true
+                    instant: true
+                    intervalMs: 1000
+                    legendFormat: __auto
+                    maxDataPoints: 43200
+                    range: false
+                    refId: A
+                    useBackend: false
+                - refId: B
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                        - evaluator:
+                            params: []
+                            type: gt
+                          operator:
+                            type: and
+                          query:
+                            params:
+                                - B
+                          reducer:
+                            params: []
+                            type: last
+                          type: query
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: A
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    reducer: last
+                    refId: B
+                    type: reduce
+                - refId: C
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                        - evaluator:
+                            params:
+                                - 80
+                            type: gt
+                          operator:
+                            type: and
+                          query:
+                            params:
+                                - C
+                          reducer:
+                            params: []
+                            type: last
+                          type: query
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: B
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: C
+                    type: threshold
+              noDataState: NoData
+              execErrState: Error
+              for: 1m
+              annotations: {}
+              labels:
+                domain: infra
+                service: pharmago
+                severity: warning
+              isPaused: false
+
+            - uid: pharmago-memory-high
+              title: PharmaGo - Memoria alta > 85%
+              condition: C
+              data:
+                - refId: A
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: prometheus
+                  model:
+                    datasource:
+                        type: prometheus
+                        uid: prometheus
+                    editorMode: code
+                    expr: 100 * (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes)))
+                    instant: true
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    range: false
+                    refId: A
+                - refId: B
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: A
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    reducer: last
+                    refId: B
+                    type: reduce
+                - refId: C
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                        - evaluator:
+                            params:
+                                - 85
+                            type: gt
+                          operator:
+                            type: and
+                          query:
+                            params:
+                                - C
+                          reducer:
+                            params: []
+                            type: last
+                          type: query
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: B
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: C
+                    type: threshold
+              noDataState: NoData
+              execErrState: Error
+              for: 1m
+              annotations:
+                summary: Memoria alta en PharmaGo
+              labels:
+                domain: infra
+                service: pharmago
+                severity: warning
+              isPaused: false
+
+        - orgId: 1
+          name: API
+          folder: PharmaGo
+          interval: 1m
+          rules:
+            - uid: pharmago-api-latency-high
+              title: PharmaGo - Latencia promedio > 1000ms
+              condition: C
+              data:
+                - refId: A
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: prometheus
+                  model:
+                    datasource:
+                        type: prometheus
+                        uid: prometheus
+                    editorMode: code
+                    expr: (sum(rate(pharmago_http_request_duration_milliseconds_sum[5m])) / sum(rate(pharmago_http_request_duration_milliseconds_count[5m]))) or vector(0)
+                    instant: true
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    range: false
+                    refId: A
+                - refId: B
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: A
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    reducer: last
+                    refId: B
+                    type: reduce
+                - refId: C
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                        - evaluator:
+                            params:
+                                - 1000
+                            type: gt
+                          operator:
+                            type: and
+                          query:
+                            params:
+                                - C
+                          reducer:
+                            params: []
+                            type: last
+                          type: query
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: B
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: C
+                    type: threshold
+              noDataState: OK
+              execErrState: Error
+              for: 1m
+              annotations:
+                summary: Latencia promedio HTTP alta
+              labels:
+                domain: api
+                service: pharmago
+                severity: warning
+              isPaused: false
+
+            - uid: pharmago-api-http-500-high
+              title: PharmaGo - Errores HTTP 500 > 5 en 5m
+              condition: C
+              data:
+                - refId: A
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: prometheus
+                  model:
+                    datasource:
+                        type: prometheus
+                        uid: prometheus
+                    editorMode: code
+                    expr: sum(increase(pharmago_http_requests_total{status_code="500"}[5m]))
+                    instant: true
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    range: false
+                    refId: A
+                - refId: B
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: A
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    reducer: last
+                    refId: B
+                    type: reduce
+                - refId: C
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                        - evaluator:
+                            params:
+                                - 5
+                            type: gt
+                          operator:
+                            type: and
+                          query:
+                            params:
+                                - C
+                          reducer:
+                            params: []
+                            type: last
+                          type: query
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: B
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: C
+                    type: threshold
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                summary: Mas de 5 respuestas HTTP 500 en los ultimos 5 minutos
+              labels:
+                domain: api
+                service: pharmago
+                severity: critical
+              isPaused: false
+
+            - uid: pharmago-api-http-429-high
+              title: PharmaGo - Rate limit HTTP 429 > 10 en 5m
+              condition: C
+              data:
+                - refId: A
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: prometheus
+                  model:
+                    datasource:
+                        type: prometheus
+                        uid: prometheus
+                    editorMode: code
+                    expr: sum(increase(pharmago_http_requests_total{status_code="429"}[5m]))
+                    instant: true
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    range: false
+                    refId: A
+                - refId: B
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: A
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    reducer: last
+                    refId: B
+                    type: reduce
+                - refId: C
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                        - evaluator:
+                            params:
+                                - 10
+                            type: gt
+                          operator:
+                            type: and
+                          query:
+                            params:
+                                - C
+                          reducer:
+                            params: []
+                            type: last
+                          type: query
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: B
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: C
+                    type: threshold
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                summary: Mas de 10 respuestas HTTP 429 en los ultimos 5 minutos
+              labels:
+                domain: api
+                service: pharmago
+                severity: warning
+              isPaused: false
