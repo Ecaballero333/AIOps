@@ -28,15 +28,15 @@ namespace PharmaGo.PharmacyService.Controllers
             try
             {
                 var exporters = _exportManager.GetAllExporters();
-                _structuredLogger.LogInformation(
-                    "Exporters retrieved",
-                    new Dictionary<string, object>
-                    {
-                        ["pharma_biz"] = "exporter_list",
-                        ["component"] = "ExportController",
-                        ["operation"] = "list_exporters",
-                        ["outcome"] = "success"
-                    });
+                // _structuredLogger.LogInformation(
+                //     "Exporters retrieved",
+                //     new Dictionary<string, object>
+                //     {
+                //         ["pharma_biz"] = "exporter_list",
+                //         ["component"] = "ExportController",
+                //         ["operation"] = "list_exporters",
+                //         ["outcome"] = "success"
+                //     });
                 return Ok(exporters);
             }
             catch (Exception ex)
@@ -62,16 +62,16 @@ namespace PharmaGo.PharmacyService.Controllers
             try
             {
                 var parameters = _exportManager.GetParameters(exporterName);
-                _structuredLogger.LogInformation(
-                    "Exporter parameters retrieved",
-                    new Dictionary<string, object>
-                    {
-                        ["pharma_biz"] = "exporter_parameters",
-                        ["component"] = "ExportController",
-                        ["operation"] = "get_exporter_parameters",
-                        ["outcome"] = "success",
-                        ["exporter_name"] = exporterName ?? ""
-                    });
+                // _structuredLogger.LogInformation(
+                //     "Exporter parameters retrieved",
+                //     new Dictionary<string, object>
+                //     {
+                //         ["pharma_biz"] = "exporter_parameters",
+                //         ["component"] = "ExportController",
+                //         ["operation"] = "get_exporter_parameters",
+                //         ["outcome"] = "success",
+                //         ["exporter_name"] = exporterName ?? ""
+                //     });
                 return Ok(parameters);
             }
             catch (Exception ex)

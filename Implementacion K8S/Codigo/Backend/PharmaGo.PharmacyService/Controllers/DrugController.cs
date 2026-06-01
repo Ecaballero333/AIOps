@@ -31,19 +31,19 @@ namespace PharmaGo.PharmacyService.Controllers
             {
                 IEnumerable<Drug> drugs = _drugManager.GetAll(drugSearchCriteria);
                 List<DrugBasicModel> drugsToReturn = drugs.Select(d => new DrugBasicModel(d)).ToList();
-                _structuredLogger.LogInformation(
-                    "Drugs retrieved",
-                    new Dictionary<string, object>
-                    {
-                        ["pharma_biz"] = "drug_list",
-                        ["component"] = "DrugController",
-                        ["operation"] = "list_drugs",
-                        ["db_operation"] = "read_drugs",
-                        ["outcome"] = "success",
-                        ["drugs_count"] = drugsToReturn.Count,
-                        ["drug_name"] = drugSearchCriteria?.Name ?? "",
-                        ["pharmacy_id"] = drugSearchCriteria?.PharmacyId ?? 0
-                    });
+                // _structuredLogger.LogInformation(
+                //     "Drugs retrieved",
+                //     new Dictionary<string, object>
+                //     {
+                //         ["pharma_biz"] = "drug_list",
+                //         ["component"] = "DrugController",
+                //         ["operation"] = "list_drugs",
+                //         ["db_operation"] = "read_drugs",
+                //         ["outcome"] = "success",
+                //         ["drugs_count"] = drugsToReturn.Count,
+                //         ["drug_name"] = drugSearchCriteria?.Name ?? "",
+                //         ["pharmacy_id"] = drugSearchCriteria?.PharmacyId ?? 0
+                //     });
                 return Ok(drugsToReturn);
             }
             catch (Exception ex)

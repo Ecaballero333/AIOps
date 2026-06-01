@@ -25,17 +25,17 @@ namespace PharmaGo.UsersService.Controllers
             {
                 var roles = _roleManager.GetAll();
                 List<RoleModelResponse> result = roles.Select(role => new RoleModelResponse(role)).ToList();
-                _structuredLogger.LogInformation(
-                    "Roles retrieved",
-                    new Dictionary<string, object>
-                    {
-                        ["pharma_biz"] = "role_list",
-                        ["component"] = "RolesController",
-                        ["operation"] = "list_roles",
-                        ["db_operation"] = "read_roles",
-                        ["outcome"] = "success",
-                        ["roles_count"] = result.Count
-                    });
+                // _structuredLogger.LogInformation(
+                //     "Roles retrieved",
+                //     new Dictionary<string, object>
+                //     {
+                //         ["pharma_biz"] = "role_list",
+                //         ["component"] = "RolesController",
+                //         ["operation"] = "list_roles",
+                //         ["db_operation"] = "read_roles",
+                //         ["outcome"] = "success",
+                //         ["roles_count"] = result.Count
+                //     });
                 return Ok(result);
             }
             catch (Exception ex)
@@ -59,15 +59,15 @@ namespace PharmaGo.UsersService.Controllers
         [HttpGet("test")]
         public IActionResult Test()
         {
-            _structuredLogger.LogInformation(
-                "Roles service health test completed",
-                new Dictionary<string, object>
-                {
-                    ["pharma_biz"] = "roles_health_test",
-                    ["component"] = "RolesController",
-                    ["operation"] = "health_test",
-                    ["outcome"] = "success"
-                });
+            // _structuredLogger.LogInformation(
+            //     "Roles service health test completed",
+            //     new Dictionary<string, object>
+            //     {
+            //         ["pharma_biz"] = "roles_health_test",
+            //         ["component"] = "RolesController",
+            //         ["operation"] = "health_test",
+            //         ["outcome"] = "success"
+            //     });
             return Ok(new { status = "ok", message = "Service is healthy" });
         }
 
@@ -75,16 +75,16 @@ namespace PharmaGo.UsersService.Controllers
         public IActionResult Ping()
         {
             DateTime timestamp = DateTime.UtcNow;
-            _structuredLogger.LogInformation(
-                "Roles service ping completed",
-                new Dictionary<string, object>
-                {
-                    ["pharma_biz"] = "roles_ping",
-                    ["component"] = "RolesController",
-                    ["operation"] = "ping",
-                    ["outcome"] = "success",
-                    ["timestamp_utc"] = timestamp.ToString("O")
-                });
+            // _structuredLogger.LogInformation(
+            //     "Roles service ping completed",
+            //     new Dictionary<string, object>
+            //     {
+            //         ["pharma_biz"] = "roles_ping",
+            //         ["component"] = "RolesController",
+            //         ["operation"] = "ping",
+            //         ["outcome"] = "success",
+            //         ["timestamp_utc"] = timestamp.ToString("O")
+            //     });
             return Ok(new { status = "ok", message = "pong", timestamp });
         }
 

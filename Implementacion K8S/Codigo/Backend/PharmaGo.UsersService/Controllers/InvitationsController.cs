@@ -79,20 +79,20 @@ namespace PharmaGo.UsersService.Controllers
 
                 List<InvitationSearchCriteriaModelResponse> result =
                     invitations.Select(invitaion => new InvitationSearchCriteriaModelResponse(invitaion)).ToList();
-                _structuredLogger.LogInformation(
-                    "Invitations retrieved",
-                    new Dictionary<string, object>
-                    {
-                        ["pharma_biz"] = "invitation_list",
-                        ["component"] = "InvitationsController",
-                        ["operation"] = "list_invitations",
-                        ["db_operation"] = "read_invitations",
-                        ["outcome"] = "success",
-                        ["invitations_count"] = result.Count,
-                        ["user_name"] = searchCriteria?.UserName ?? "",
-                        ["pharmacy_name"] = searchCriteria?.Pharmacy ?? "",
-                        ["role_name"] = searchCriteria?.Role ?? ""
-                    });
+                // _structuredLogger.LogInformation(
+                //     "Invitations retrieved",
+                //     new Dictionary<string, object>
+                //     {
+                //         ["pharma_biz"] = "invitation_list",
+                //         ["component"] = "InvitationsController",
+                //         ["operation"] = "list_invitations",
+                //         ["db_operation"] = "read_invitations",
+                //         ["outcome"] = "success",
+                //         ["invitations_count"] = result.Count,
+                //         ["user_name"] = searchCriteria?.UserName ?? "",
+                //         ["pharmacy_name"] = searchCriteria?.Pharmacy ?? "",
+                //         ["role_name"] = searchCriteria?.Role ?? ""
+                //     });
                 return Ok(result);
             }
             catch (Exception ex)

@@ -58,21 +58,21 @@ namespace PharmaGo.UsersService.Filters
 
         private static void LogAuthorizationSuccess(ActionExecutingContext context)
         {
-            var logger = GetStructuredLogger(context);
-            User? user = GetAuthenticatedUser(context);
-            logger?.LogInformation(
-                "Authorization succeeded",
-                new Dictionary<string, object>
-                {
-                    ["pharma_biz"] = "auth_success",
-                    ["component"] = "AuthorizationFilter",
-                    ["operation"] = "authorize_request",
-                    ["outcome"] = "success",
-                    ["request_path"] = context.HttpContext.Request.Path.Value ?? "unknown",
-                    ["user_id"] = user?.Id ?? 0,
-                    ["user_name"] = user?.UserName ?? "unknown",
-                    ["role"] = user?.Role?.Name ?? "unknown"
-                });
+            // var logger = GetStructuredLogger(context);
+            // User? user = GetAuthenticatedUser(context);
+            // logger?.LogInformation(
+            //     "Authorization succeeded",
+            //     new Dictionary<string, object>
+            //     {
+            //         ["pharma_biz"] = "auth_success",
+            //         ["component"] = "AuthorizationFilter",
+            //         ["operation"] = "authorize_request",
+            //         ["outcome"] = "success",
+            //         ["request_path"] = context.HttpContext.Request.Path.Value ?? "unknown",
+            //         ["user_id"] = user?.Id ?? 0,
+            //         ["user_name"] = user?.UserName ?? "unknown",
+            //         ["role"] = user?.Role?.Name ?? "unknown"
+            //     });
         }
 
         private static User? GetAuthenticatedUser(ActionExecutingContext context)
