@@ -20,9 +20,20 @@ public static class CorrelationIdMiddlewareExtensions
             var correlationId = string.IsNullOrWhiteSpace(header)
                 ? Guid.NewGuid().ToString("D")
                 : header.Trim();
+
             context.Items[HttpContextItemKey] = correlationId;
             context.Response.Headers["X-Correlation-ID"] = correlationId;
-            await next();
+            
+            var loggerFactory = context.RequestServices.GetRequiredService<ILoggerFactory>();
+            var log = loggerFactory.CreateLogger("GatewayRequest");
+
+            using (log.BeginScope(new Dictionary<string, object>
+            {
+                ["correlation_id"] = correlationId
+            }))
+            {
+                await next();
+            }
         });
     }
 
