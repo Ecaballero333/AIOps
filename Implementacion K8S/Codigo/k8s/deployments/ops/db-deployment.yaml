@@ -41,15 +41,13 @@ spec:
           mountPath: /var/opt/mssql
       containers:
       - name: pharmago-db
-        image: mcr.microsoft.com/mssql/server:2019-latest
+        image: mcr.microsoft.com/azure-sql-edge:latest
         ports:
         - containerPort: 1433
         env:
         - name: ACCEPT_EULA
           value: "Y"
-        - name: MSSQL_PID
-          value: "Express"
-        - name: SA_PASSWORD
+        - name: MSSQL_SA_PASSWORD
           valueFrom:
             secretKeyRef:
               name: db-secret
@@ -83,4 +81,3 @@ spec:
       - name: sql-storage
         persistentVolumeClaim:
           claimName: sql-pvc
-
