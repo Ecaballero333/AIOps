@@ -14,17 +14,20 @@ namespace PharmaGo.ApiGateway.Middleware
         private readonly ILogger<UserRateLimitMiddleware> _logger;
         
         // Configuración
-        private const int MaxRequestsPerMinute = 100;
-        private const int MaxRequestsPerHour = 1000;
+        private readonly int _maxRequestsPerMinute;
+        private readonly int _maxRequestsPerHour;
 
         public UserRateLimitMiddleware(
             RequestDelegate next, 
             IMemoryCache cache,
-            ILogger<UserRateLimitMiddleware> logger)
+            ILogger<UserRateLimitMiddleware> logger,
+            IConfiguration configuration)
         {
             _next = next;
             _cache = cache;
             _logger = logger;
+            _maxRequestsPerMinute = configuration.GetValue("RateLimiting:MaxRequestsPerMinute", 100);
+            _maxRequestsPerHour = configuration.GetValue("RateLimiting:MaxRequestsPerHour", 1000);
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -101,9 +104,9 @@ namespace PharmaGo.ApiGateway.Middleware
                 return 0;
             });
 
-            if (minuteCount >= MaxRequestsPerMinute)
+            if (minuteCount >= _maxRequestsPerMinute)
             {
-                reason = $"Exceeded {MaxRequestsPerMinute} requests per minute";
+                reason = $"Exceeded {_maxRequestsPerMinute} requests per minute";
                 return false;
             }
 
@@ -115,9 +118,9 @@ namespace PharmaGo.ApiGateway.Middleware
                 return 0;
             });
 
-            if (hourCount >= MaxRequestsPerHour)
+            if (hourCount >= _maxRequestsPerHour)
             {
-                reason = $"Exceeded {MaxRequestsPerHour} requests per hour";
+                reason = $"Exceeded {_maxRequestsPerHour} requests per hour";
                 return false;
             }
 
