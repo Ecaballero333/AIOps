@@ -2,6 +2,7 @@ using PharmaGo.Domain.Entities;
 using PharmaGo.Exceptions;
 using PharmaGo.UsersService.IBusinessLogic;
 using PharmaGo.IDataAccess;
+using InstrumentationInterface;
 using System.Text.RegularExpressions;
 
 namespace PharmaGo.UsersService.BusinessLogic
@@ -10,11 +11,13 @@ namespace PharmaGo.UsersService.BusinessLogic
     {
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<Invitation> _invitationRepository;
+        private readonly IStructuredLogger _structuredLogger;
 
-        public UsersManager(IRepository<User> repository, IRepository<Invitation> invitationRepository)
+        public UsersManager(IRepository<User> repository, IRepository<Invitation> invitationRepository, IStructuredLogger structuredLogger)
         {
             _userRepository = repository;
             _invitationRepository = invitationRepository;
+            _structuredLogger = structuredLogger;
         }
 
         public User CreateUser(string UserName, string UserCode, string Email, string Password, string Address, DateTime RegistrationDate)
@@ -52,13 +55,61 @@ namespace PharmaGo.UsersService.BusinessLogic
                 Pharmacy = invitation.Pharmacy,
                 Role = invitation.Role
             };
-            _userRepository.InsertOne(user);
+            _structuredLogger.LogInformation(
+                "User create business validation completed",
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "user_business_validation",
+                    ["component"] = "UsersManager",
+                    ["operation"] = "create_user",
+                    ["outcome"] = "success",
+                    ["user_name"] = UserName,
+                    ["email"] = Email,
+                    ["invitation_id"] = invitation.Id
+                });
 
-            invitation.IsActive = false;
-            _invitationRepository.UpdateOne(invitation);
+            try
+            {
+                _userRepository.InsertOne(user);
 
-            _userRepository.Save();
-            _invitationRepository.Save();
+                invitation.IsActive = false;
+                _invitationRepository.UpdateOne(invitation);
+
+                _userRepository.Save();
+                _invitationRepository.Save();
+                _structuredLogger.LogInformation(
+                    "User persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "user_db_insert",
+                        ["component"] = "UsersManager",
+                        ["operation"] = "create_user",
+                        ["db_operation"] = "insert_user_and_update_invitation",
+                        ["outcome"] = "success",
+                        ["user_id"] = user.Id,
+                        ["user_name"] = user.UserName,
+                        ["invitation_id"] = invitation.Id
+                    });
+            }
+            catch (Exception ex)
+            {
+                _structuredLogger.LogError(
+                    "User database insert failed",
+                    ex,
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "user_db_insert_fail",
+                        ["component"] = "UsersManager",
+                        ["operation"] = "create_user",
+                        ["db_operation"] = "insert_user_and_update_invitation",
+                        ["outcome"] = "failed",
+                        ["user_name"] = UserName ?? "unknown",
+                        ["email"] = Email ?? "unknown",
+                        ["error_type"] = ex.GetType().Name,
+                        ["error_message"] = ex.Message
+                    });
+                throw;
+            }
 
             return user;
 
