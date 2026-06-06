@@ -2,6 +2,7 @@ using PharmaGo.Domain.Entities;
 using PharmaGo.Exceptions;
 using PharmaGo.PharmacyService.IBusinessLogic;
 using PharmaGo.IDataAccess;
+using InstrumentationInterface;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
@@ -17,6 +18,7 @@ namespace PharmaGo.PharmacyService.BusinessLogic
         private readonly IRepository<PurchaseDetail> _purchaseDetailRepository;
         private readonly IRepository<Session> _sessionRepository;
         private readonly IRepository<User> _userRepository;
+        private readonly IStructuredLogger _structuredLogger;
 
         private readonly string PENDING = "Pending";
         private readonly string REJECTED = "Rejected";
@@ -27,7 +29,8 @@ namespace PharmaGo.PharmacyService.BusinessLogic
                                 IRepository<Drug> drugsRepository,
                                 IRepository<PurchaseDetail> purchaseDetailRepository,
                                 IRepository<Session> sessionRespository,
-                                IRepository<User> userRespository)
+                                IRepository<User> userRespository,
+                                IStructuredLogger structuredLogger)
         {
             _purchasesRepository = purchasesRepository;
             _pharmacysRepository = pharmacysRepository;
@@ -35,6 +38,7 @@ namespace PharmaGo.PharmacyService.BusinessLogic
             _purchaseDetailRepository = purchaseDetailRepository;
             _sessionRepository = sessionRespository;
             _userRepository = userRespository;
+            _structuredLogger = structuredLogger;
         }
 
         public Purchase CreatePurchase(Purchase purchase)
@@ -77,8 +81,43 @@ namespace PharmaGo.PharmacyService.BusinessLogic
             }
             purchase.TotalAmount = total;
             purchase.TrackingCode = generateTrackingCode();
-            _purchasesRepository.InsertOne(purchase);
-            _purchasesRepository.Save();
+            _structuredLogger.LogInformation(
+                "Purchase create business validation completed",
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "purchase_business_validation",
+                    ["component"] = "PurchasesManager",
+                    ["operation"] = "create_purchase",
+                    ["outcome"] = "success",
+                    ["buyer_email"] = purchase.BuyerEmail,
+                    ["details_count"] = purchase.details.Count,
+                    ["total_amount"] = purchase.TotalAmount
+                });
+
+            try
+            {
+                _purchasesRepository.InsertOne(purchase);
+                _purchasesRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Purchase persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "purchase_db_insert",
+                        ["component"] = "PurchasesManager",
+                        ["operation"] = "create_purchase",
+                        ["db_operation"] = "insert_purchase",
+                        ["outcome"] = "success",
+                        ["purchase_id"] = purchase.Id,
+                        ["tracking_code"] = purchase.TrackingCode,
+                        ["buyer_email"] = purchase.BuyerEmail,
+                        ["total_amount"] = purchase.TotalAmount
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogPurchasePersistenceFailure("purchase_db_insert_fail", "create_purchase", "insert_purchase", purchase.Id, purchase.TrackingCode, ex);
+                throw;
+            }
 
             return purchase;
         }
@@ -120,13 +159,48 @@ namespace PharmaGo.PharmacyService.BusinessLogic
             if (purchaseDetail.Quantity > drug.Stock)
                 throw new InvalidResourceException($"The Drug {drug.Code} is out of stock in Pharmacy {pharmacy.Name}");
 
-            drug.Stock = drug.Stock - purchaseDetail.Quantity;
-            _drugsRepository.UpdateOne(drug);
-            _drugsRepository.Save();
+            _structuredLogger.LogInformation(
+                "Purchase approve business validation completed",
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "purchase_business_validation",
+                    ["component"] = "PurchasesManager",
+                    ["operation"] = "approve_purchase_detail",
+                    ["outcome"] = "success",
+                    ["purchase_id"] = purchaseId,
+                    ["pharmacy_id"] = pharmacyId,
+                    ["drug_code"] = drugCode
+                });
 
-            purchaseDetail.Status = APPROVED;
-            _purchaseDetailRepository.UpdateOne(purchaseDetail);
-            _purchaseDetailRepository.Save();
+            try
+            {
+                drug.Stock = drug.Stock - purchaseDetail.Quantity;
+                _drugsRepository.UpdateOne(drug);
+                _drugsRepository.Save();
+
+                purchaseDetail.Status = APPROVED;
+                _purchaseDetailRepository.UpdateOne(purchaseDetail);
+                _purchaseDetailRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Purchase approval persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "purchase_db_update",
+                        ["component"] = "PurchasesManager",
+                        ["operation"] = "approve_purchase_detail",
+                        ["db_operation"] = "update_purchase_detail_and_stock",
+                        ["outcome"] = "success",
+                        ["purchase_id"] = purchaseId,
+                        ["pharmacy_id"] = pharmacyId,
+                        ["drug_code"] = drugCode,
+                        ["purchase_detail_status"] = purchaseDetail.Status
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogPurchasePersistenceFailure("purchase_db_update_fail", "approve_purchase_detail", "update_purchase_detail_and_stock", purchaseId, purchase.TrackingCode, ex);
+                throw;
+            }
 
             return purchaseDetail;
         }
@@ -156,14 +230,49 @@ namespace PharmaGo.PharmacyService.BusinessLogic
             if (drug is null)
                 throw new ResourceNotFoundException($"Drug {drugCode} not found in Pharmacy {pharmacy.Name}");
 
-            purchaseDetail.Status = REJECTED;
-            _purchaseDetailRepository.UpdateOne(purchaseDetail);
-            _purchaseDetailRepository.Save();
+            _structuredLogger.LogInformation(
+                "Purchase reject business validation completed",
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "purchase_business_validation",
+                    ["component"] = "PurchasesManager",
+                    ["operation"] = "reject_purchase_detail",
+                    ["outcome"] = "success",
+                    ["purchase_id"] = purchaseId,
+                    ["pharmacy_id"] = pharmacyId,
+                    ["drug_code"] = drugCode
+                });
 
-            purchase.TotalAmount = purchase.TotalAmount - (purchaseDetail.Price * purchaseDetail.Quantity);
+            try
+            {
+                purchaseDetail.Status = REJECTED;
+                _purchaseDetailRepository.UpdateOne(purchaseDetail);
+                _purchaseDetailRepository.Save();
 
-            _purchasesRepository.UpdateOne(purchase);
-            _purchasesRepository.Save();
+                purchase.TotalAmount = purchase.TotalAmount - (purchaseDetail.Price * purchaseDetail.Quantity);
+
+                _purchasesRepository.UpdateOne(purchase);
+                _purchasesRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Purchase rejection persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "purchase_db_update",
+                        ["component"] = "PurchasesManager",
+                        ["operation"] = "reject_purchase_detail",
+                        ["db_operation"] = "update_purchase_detail_and_purchase",
+                        ["outcome"] = "success",
+                        ["purchase_id"] = purchaseId,
+                        ["pharmacy_id"] = pharmacyId,
+                        ["drug_code"] = drugCode,
+                        ["purchase_detail_status"] = purchaseDetail.Status
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogPurchasePersistenceFailure("purchase_db_update_fail", "reject_purchase_detail", "update_purchase_detail_and_purchase", purchaseId, purchase.TrackingCode, ex);
+                throw;
+            }
 
             return purchaseDetail;
         }
@@ -279,6 +388,25 @@ namespace PharmaGo.PharmacyService.BusinessLogic
                 throw new InvalidResourceException($"Tracking Code is can't be empty");
 
             return _purchasesRepository.GetOneDetailByExpression(p => p.TrackingCode == trackingCode);
+        }
+
+        private void LogPurchasePersistenceFailure(string pharmaBiz, string operation, string dbOperation, int purchaseId, string trackingCode, Exception ex)
+        {
+            _structuredLogger.LogError(
+                "Purchase database operation failed",
+                ex,
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = pharmaBiz,
+                    ["component"] = "PurchasesManager",
+                    ["operation"] = operation,
+                    ["db_operation"] = dbOperation,
+                    ["outcome"] = "failed",
+                    ["purchase_id"] = purchaseId,
+                    ["tracking_code"] = trackingCode ?? "unknown",
+                    ["error_type"] = ex.GetType().Name,
+                    ["error_message"] = ex.Message
+                });
         }
     }
 }

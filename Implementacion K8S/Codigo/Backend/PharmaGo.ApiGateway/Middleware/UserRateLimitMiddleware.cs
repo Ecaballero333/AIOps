@@ -35,8 +35,12 @@ namespace PharmaGo.ApiGateway.Middleware
             // Verificar límites
             if (!CheckRateLimit(identifier, out string reason))
             {
-                _logger.LogWarning($"Rate limit exceeded for {identifier}: {reason}");
-                
+                _logger.LogWarning(
+                    "Rate limit exceeded for {Identifier}: {Reason}",
+                    identifier,
+                    reason
+                );
+                                
                 context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
                 context.Response.Headers.Add("X-RateLimit-Reason", reason);
                 await context.Response.WriteAsJsonAsync(new 

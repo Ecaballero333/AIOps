@@ -3,6 +3,7 @@ using PharmaGo.Domain.SearchCriterias;
 using PharmaGo.Exceptions;
 using PharmaGo.PharmacyService.IBusinessLogic;
 using PharmaGo.IDataAccess;
+using InstrumentationInterface;
 
 namespace PharmaGo.PharmacyService.BusinessLogic
 {
@@ -12,14 +13,17 @@ namespace PharmaGo.PharmacyService.BusinessLogic
         private readonly IRepository<User> _employeeRepository;
         private readonly IRepository<Drug> _drugRepository;
         private readonly IRepository<Session> _sessionRepository;
+        private readonly IStructuredLogger _structuredLogger;
 
         public StockRequestManager(IRepository<StockRequest> stockRequestRepository,
-            IRepository<User> employeeRepository, IRepository<Drug> drugRepository, IRepository<Session> sessionRepository)
+            IRepository<User> employeeRepository, IRepository<Drug> drugRepository, IRepository<Session> sessionRepository,
+            IStructuredLogger structuredLogger)
 		{
             _stockRequestRepository = stockRequestRepository;
             _employeeRepository = employeeRepository;
             _drugRepository = drugRepository;
             _sessionRepository = sessionRepository;
+            _structuredLogger = structuredLogger;
         }
 
         public bool ApproveStockRequest(int id)
@@ -40,11 +44,42 @@ namespace PharmaGo.PharmacyService.BusinessLogic
                 _drugRepository.UpdateOne(drug);
             }
 
-            stockRequest.Status = Domain.Enums.StockRequestStatus.Approved;
-            _stockRequestRepository.UpdateOne(stockRequest);
+            _structuredLogger.LogInformation(
+                "Stock request approve business validation completed",
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "stock_request_business_validation",
+                    ["component"] = "StockRequestManager",
+                    ["operation"] = "approve_stock_request",
+                    ["outcome"] = "success",
+                    ["stock_request_id"] = id
+                });
 
-            _drugRepository.Save();
-            _stockRequestRepository.Save();
+            try
+            {
+                stockRequest.Status = Domain.Enums.StockRequestStatus.Approved;
+                _stockRequestRepository.UpdateOne(stockRequest);
+
+                _drugRepository.Save();
+                _stockRequestRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Stock request approval persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "stock_request_db_update",
+                        ["component"] = "StockRequestManager",
+                        ["operation"] = "approve_stock_request",
+                        ["db_operation"] = "update_stock_request_and_drug_stock",
+                        ["outcome"] = "success",
+                        ["stock_request_id"] = id,
+                        ["status"] = stockRequest.Status.ToString()
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogStockRequestPersistenceFailure("stock_request_db_update_fail", "approve_stock_request", "update_stock_request_and_drug_stock", id, ex);
+                throw;
+            }
 
             return true;
         }
@@ -59,9 +94,40 @@ namespace PharmaGo.PharmacyService.BusinessLogic
                 if (stockRequest.Status == Domain.Enums.StockRequestStatus.Rejected) throw new InvalidResourceException("Stock request already rejected.");
             }  
 
-            stockRequest.Status = Domain.Enums.StockRequestStatus.Rejected;
-            _stockRequestRepository.UpdateOne(stockRequest);
-            _stockRequestRepository.Save();
+            _structuredLogger.LogInformation(
+                "Stock request reject business validation completed",
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "stock_request_business_validation",
+                    ["component"] = "StockRequestManager",
+                    ["operation"] = "reject_stock_request",
+                    ["outcome"] = "success",
+                    ["stock_request_id"] = id
+                });
+
+            try
+            {
+                stockRequest.Status = Domain.Enums.StockRequestStatus.Rejected;
+                _stockRequestRepository.UpdateOne(stockRequest);
+                _stockRequestRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Stock request rejection persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "stock_request_db_update",
+                        ["component"] = "StockRequestManager",
+                        ["operation"] = "reject_stock_request",
+                        ["db_operation"] = "update_stock_request",
+                        ["outcome"] = "success",
+                        ["stock_request_id"] = id,
+                        ["status"] = stockRequest.Status.ToString()
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogStockRequestPersistenceFailure("stock_request_db_update_fail", "reject_stock_request", "update_stock_request", id, ex);
+                throw;
+            }
 
             return true;
         }
@@ -88,9 +154,42 @@ namespace PharmaGo.PharmacyService.BusinessLogic
                 item.Drug = drug;
             }
 
-            stockRequest.Status = Domain.Enums.StockRequestStatus.Pending;
-            _stockRequestRepository.InsertOne(stockRequest);
-            _stockRequestRepository.Save();
+            _structuredLogger.LogInformation(
+                "Stock request create business validation completed",
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = "stock_request_business_validation",
+                    ["component"] = "StockRequestManager",
+                    ["operation"] = "create_stock_request",
+                    ["outcome"] = "success",
+                    ["employee_id"] = existEmployee.Id,
+                    ["details_count"] = stockRequest.Details.Count
+                });
+
+            try
+            {
+                stockRequest.Status = Domain.Enums.StockRequestStatus.Pending;
+                _stockRequestRepository.InsertOne(stockRequest);
+                _stockRequestRepository.Save();
+                _structuredLogger.LogInformation(
+                    "Stock request persisted in database",
+                    new Dictionary<string, object>
+                    {
+                        ["pharma_biz"] = "stock_request_db_insert",
+                        ["component"] = "StockRequestManager",
+                        ["operation"] = "create_stock_request",
+                        ["db_operation"] = "insert_stock_request",
+                        ["outcome"] = "success",
+                        ["stock_request_id"] = stockRequest.Id,
+                        ["employee_id"] = existEmployee.Id,
+                        ["status"] = stockRequest.Status.ToString()
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogStockRequestPersistenceFailure("stock_request_db_insert_fail", "create_stock_request", "insert_stock_request", stockRequest.Id, ex);
+                throw;
+            }
 
             return stockRequest;
         }
@@ -121,6 +220,24 @@ namespace PharmaGo.PharmacyService.BusinessLogic
 
             return stockRequests;
 
+        }
+
+        private void LogStockRequestPersistenceFailure(string pharmaBiz, string operation, string dbOperation, int stockRequestId, Exception ex)
+        {
+            _structuredLogger.LogError(
+                "Stock request database operation failed",
+                ex,
+                new Dictionary<string, object>
+                {
+                    ["pharma_biz"] = pharmaBiz,
+                    ["component"] = "StockRequestManager",
+                    ["operation"] = operation,
+                    ["db_operation"] = dbOperation,
+                    ["outcome"] = "failed",
+                    ["stock_request_id"] = stockRequestId,
+                    ["error_type"] = ex.GetType().Name,
+                    ["error_message"] = ex.Message
+                });
         }
     }
 }
