@@ -193,7 +193,7 @@ data:
                         type: prometheus
                         uid: prometheus
                     editorMode: code
-                    expr: (sum(rate(pharmago_http_request_duration_milliseconds_sum[5m])) / sum(rate(pharmago_http_request_duration_milliseconds_count[5m]))) or vector(0)
+                    expr: (sum(rate(pharmago_http_request_duration_milliseconds_ms_sum[5m])) / sum(rate(pharmago_http_request_duration_milliseconds_ms_count[5m]))) or vector(0)
                     instant: true
                     intervalMs: 1000
                     maxDataPoints: 43200
@@ -253,8 +253,8 @@ data:
                 severity: warning
               isPaused: false
 
-            - uid: pharmago-api-http-500-high
-              title: PharmaGo - Errores HTTP 500 > 5 en 5m
+            - uid: pharmago-api-error-rate-high
+              title: PharmaGo - Alta Tasa de Error > 1%
               condition: C
               data:
                 - refId: A
@@ -267,7 +267,7 @@ data:
                         type: prometheus
                         uid: prometheus
                     editorMode: code
-                    expr: sum(increase(pharmago_http_requests_total{status_code="500"}[5m]))
+                    expr: sum(rate(pharmago_http_errors_total_1[5m])) / sum(rate(pharmago_http_requests_total_1[5m])) * 100
                     instant: true
                     intervalMs: 1000
                     maxDataPoints: 43200
@@ -297,7 +297,7 @@ data:
                     conditions:
                         - evaluator:
                             params:
-                                - 5
+                                - 1
                             type: gt
                           operator:
                             type: and
@@ -320,7 +320,7 @@ data:
               execErrState: Error
               for: 0m
               annotations:
-                summary: Mas de 5 respuestas HTTP 500 en los ultimos 5 minutos
+                summary: Tasa de error HTTP superior al 1% en los ultimos 5 minutos
               labels:
                 domain: api
                 service: pharmago
@@ -341,7 +341,7 @@ data:
                         type: prometheus
                         uid: prometheus
                     editorMode: code
-                    expr: sum(increase(pharmago_http_requests_total{status_code="429"}[5m]))
+                    expr: sum(increase(pharmago_http_requests_total_1{status_code="429"}[5m]))
                     instant: true
                     intervalMs: 1000
                     maxDataPoints: 43200

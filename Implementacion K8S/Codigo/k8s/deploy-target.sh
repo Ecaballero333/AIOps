@@ -235,13 +235,29 @@ deploy_node_exporter() {
     rollout_daemonset "node-exporter"
 }
 
+ensure_prometheus_for_grafana() {
+    CURRENT_STEP="Verificando dependencia Prometheus para Grafana"
+
+    if kubectl get deployment/prometheus -n "$NAMESPACE" >/dev/null 2>&1; then
+        log "Prometheus existe; esperando a que este listo antes de Grafana"
+        kubectl rollout status deployment/prometheus -n "$NAMESPACE" --timeout=300s
+    else
+        log "Prometheus no existe; desplegando Prometheus antes de Grafana"
+        deploy_prometheus
+    fi
+}
+
 deploy_grafana() {
     log "== Target: grafana =="
+    ensure_prometheus_for_grafana
     apply_file "configmaps/grafana-provisioning.yaml"
     apply_file "configmaps/grafana-dashboards.yaml"
     apply_file "configmaps/grafana-dashboard-infra.yaml"
     apply_file "configmaps/grafana-dashboard-business.yaml"
+    apply_file "configmaps/grafana-dashboard-endpoints.yaml"
+    apply_file "configmaps/grafana-dashboard-slo.yaml"
     apply_file "configmaps/grafana-alerts-business.yaml"
+    apply_file "configmaps/grafana-alerts-infra.yaml"
     apply_file "services/ops/grafana-service.yaml"
     apply_file "deployments/ops/grafana-deployment.yaml"
     rollout_deployment "grafana"
