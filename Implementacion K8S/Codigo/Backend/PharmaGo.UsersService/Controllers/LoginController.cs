@@ -29,6 +29,8 @@ namespace PharmaGo.UsersService.Controllers
             try
             {
                 var authorization = _loginManager.Login(userModel.UserName, userModel.Password);
+                _customMetrics.RecordLoginAttempt("success");
+                _customMetrics.RecordBusinessEvent("login", "success");
                 
                 _structuredLogger.LogInformation(
                     "Login succeeded",
@@ -46,6 +48,9 @@ namespace PharmaGo.UsersService.Controllers
             }
             catch (Exception ex)
             {
+                _customMetrics.RecordLoginAttempt("failed");
+                _customMetrics.RecordBusinessEvent("login", "failed");
+
                 _structuredLogger.LogWarning(
                     "Login failed",
                     ex,
@@ -64,4 +69,3 @@ namespace PharmaGo.UsersService.Controllers
 
     }
 }
-

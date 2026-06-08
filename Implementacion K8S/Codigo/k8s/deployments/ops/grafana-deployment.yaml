@@ -67,6 +67,21 @@ spec:
         - name: grafana-dashboard-infra
           mountPath: /etc/grafana/provisioning/dashboards/pharmago-infra.json
           subPath: pharmago-infra.json
+        - name: grafana-dashboard-business
+          mountPath: /etc/grafana/provisioning/dashboards/pharmago-business.json
+          subPath: pharmago-business.json
+        - name: grafana-dashboard-endpoints
+          mountPath: /etc/grafana/provisioning/dashboards/pharmago-endpoints.json
+          subPath: pharmago-endpoints.json
+        - name: grafana-dashboard-slo
+          mountPath: /etc/grafana/provisioning/dashboards/pharmago-slo.json
+          subPath: pharmago-slo.json
+        - name: grafana-alerts-business
+          mountPath: /etc/grafana/provisioning/alerting/business-alerts.yaml
+          subPath: business-alerts.yaml
+        - name: grafana-alerts-infra
+          mountPath: /etc/grafana/provisioning/alerting/infra-alerts.yaml
+          subPath: infra-alerts.yaml
         resources:
           requests:
             memory: "256Mi"
@@ -108,4 +123,18 @@ spec:
       - name: grafana-dashboard-infra
         configMap:
           name: grafana-dashboard-infra
-
+      - name: grafana-dashboard-business
+        configMap:
+          name: grafana-dashboard-business
+      - name: grafana-dashboard-endpoints
+        configMap:
+          name: grafana-dashboard-endpoints
+      - name: grafana-dashboard-slo
+        configMap:
+          name: grafana-dashboard-slo
+      - name: grafana-alerts-business
+        configMap:
+          name: grafana-alerts-business
+      - name: grafana-alerts-infra
+        configMap:
+          name: grafana-alerts-infra

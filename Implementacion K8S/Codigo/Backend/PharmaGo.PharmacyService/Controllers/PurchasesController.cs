@@ -15,11 +15,13 @@ namespace PharmaGo.PharmacyService.Controllers
     {
         private readonly IPurchasesManager _purchasesManager;
         private readonly IStructuredLogger _structuredLogger;
+        private readonly ICustomMetrics _customMetrics;
 
-        public PurchasesController(IPurchasesManager manager, IStructuredLogger structuredLogger)
+        public PurchasesController(IPurchasesManager manager, IStructuredLogger structuredLogger, ICustomMetrics customMetrics)
         {
             _purchasesManager = manager;
             _structuredLogger = structuredLogger;
+            _customMetrics = customMetrics;
         }
 
         [HttpGet]
@@ -117,6 +119,8 @@ namespace PharmaGo.PharmacyService.Controllers
             {
                 var purchaseDetail = _purchasesManager.ApprobePurchaseDetail(id, model.pharmacyId, model.drugCode);
                 var purchaseDetailModelResponse = new PurchaseDetailModelResponse(id, purchaseDetail);
+                _customMetrics.RecordPurchaseStatusChange("approved");
+                _customMetrics.RecordBusinessEvent("purchase_status_change", "approved_success");
                 _structuredLogger.LogInformation(
                     "Purchase detail approved",
                     new Dictionary<string, object>
@@ -135,6 +139,7 @@ namespace PharmaGo.PharmacyService.Controllers
             }
             catch (Exception ex)
             {
+                _customMetrics.RecordBusinessEvent("purchase_status_change", "approved_failed");
                 _structuredLogger.LogWarning(
                     "Purchase detail approval failed",
                     ex,
@@ -163,6 +168,8 @@ namespace PharmaGo.PharmacyService.Controllers
             {
                 var purchaseDetail = _purchasesManager.RejectPurchaseDetail(id, model.pharmacyId, model.drugCode);
                 var purchaseDetailModelResponse = new PurchaseDetailModelResponse(id, purchaseDetail);
+                _customMetrics.RecordPurchaseStatusChange("rejected");
+                _customMetrics.RecordBusinessEvent("purchase_status_change", "rejected_success");
                 _structuredLogger.LogInformation(
                     "Purchase detail rejected",
                     new Dictionary<string, object>
@@ -181,6 +188,7 @@ namespace PharmaGo.PharmacyService.Controllers
             }
             catch (Exception ex)
             {
+                _customMetrics.RecordBusinessEvent("purchase_status_change", "rejected_failed");
                 _structuredLogger.LogWarning(
                     "Purchase detail rejection failed",
                     ex,
@@ -207,6 +215,9 @@ namespace PharmaGo.PharmacyService.Controllers
             {
                 var converter = new PurchaseModelRequestToPurchaseConverter();
                 var purchase = _purchasesManager.CreatePurchase(converter.Convert(purchaseModel));
+                var itemCount = purchase.details?.Sum(detail => detail.Quantity) ?? 0;
+                _customMetrics.RecordPurchaseCreated(purchase.TotalAmount, itemCount);
+                _customMetrics.RecordBusinessEvent("purchase_create", "success");
                 _structuredLogger.LogInformation(
                     "Purchase created",
                     new Dictionary<string, object>
@@ -226,6 +237,7 @@ namespace PharmaGo.PharmacyService.Controllers
             }
             catch (Exception ex)
             {
+                _customMetrics.RecordBusinessEvent("purchase_create", "failed");
                 _structuredLogger.LogWarning(
                     "Purchase creation failed",
                     ex,

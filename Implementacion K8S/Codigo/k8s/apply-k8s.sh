@@ -44,6 +44,11 @@ kubectl apply -f configmaps/otel-collector-config.yaml
 kubectl apply -f configmaps/grafana-provisioning.yaml
 kubectl apply -f configmaps/grafana-dashboards.yaml
 kubectl apply -f configmaps/grafana-dashboard-infra.yaml
+kubectl apply -f configmaps/grafana-dashboard-business.yaml
+kubectl apply -f configmaps/grafana-dashboard-endpoints.yaml
+kubectl apply -f configmaps/grafana-dashboard-slo.yaml
+kubectl apply -f configmaps/grafana-alerts-business.yaml
+kubectl apply -f configmaps/grafana-alerts-infra.yaml
 kubectl apply -f configmaps/fluent-bit-config.yaml
 
 echo ""
@@ -168,4 +173,3 @@ echo "  Frontend:     minikube service pharmago-ui -n pharmago --url"
 echo "  Grafana:      minikube service grafana -n pharmago --url"
 echo "  Kibana:       minikube service kibana -n pharmago --url"
 echo "  Prometheus:   minikube service prometheus -n pharmago --url"
-
