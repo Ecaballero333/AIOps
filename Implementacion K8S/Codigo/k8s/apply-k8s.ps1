@@ -126,6 +126,11 @@ kubectl apply -f deployments\ops\prometheus-deployment.yaml
 kubectl apply -f services\ops\node-exporter-service.yaml
 kubectl apply -f deployments\ops\node-exporter-daemonset.yaml
 
+kubectl apply -f deployments\ops\fluent-bit-serviceaccount.yaml
+kubectl apply -f deployments\ops\fluent-bit-clusterrole.yaml
+kubectl apply -f deployments\ops\fluent-bit-clusterrolebinding.yaml
+kubectl apply -f deployments\ops\fluent-bit-daemonset.yaml
+
 kubectl apply -f services\ops\grafana-service.yaml
 kubectl apply -f deployments\ops\grafana-deployment.yaml
 

@@ -17,18 +17,20 @@ export class InvitationService {
     private commonService: CommonService,
     private storageManager: StorageManager) { }
 
-    getHttpHeaders(): HttpHeaders {
-      let login = JSON.parse(this.storageManager.getLogin());
-      let token = login ? login.token : "";
-      
-      return new HttpHeaders()
-        .set('Content-Type', 'application/json')
-        .set('Authorization', token);
-    }
+  getHttpHeaders(): HttpHeaders {
+    let login = JSON.parse(this.storageManager.getLogin());
+    let token = login ? login.token : "";
+    let userName = login ? login.userName : "";
+
+    return new HttpHeaders()
+      .set('Content-Type', 'application/json')
+      .set('Authorization', token)
+      .set('X-User-Id', userName);
+  }
 
   /** POST Create Invitation */
   createInvitation(invitation: InvitationRequest): Observable<Invitation> {
-    return this.http.post<Invitation>(this.url, invitation, {headers: this.getHttpHeaders() }).pipe(
+    return this.http.post<Invitation>(this.url, invitation, { headers: this.getHttpHeaders() }).pipe(
       tap(),
       catchError(this.handleError<Invitation>('Create Invitation'))
     );
@@ -37,22 +39,22 @@ export class InvitationService {
   /** GET invitations from the server */
   getFilterInvitations(pharmacyName: string, userName: string, roleName: string): Observable<Invitation[]> {
     let filter = "";
-    if (pharmacyName.trim() !== ""){
+    if (pharmacyName.trim() !== "") {
       filter += "&Pharmacy=" + pharmacyName;
     }
-    if (roleName.trim() !== ""){
+    if (roleName.trim() !== "") {
       filter += "&Role=" + roleName;
     }
-    if (userName.trim() !== ""){
+    if (userName.trim() !== "") {
       filter += "&UserName=" + userName;
     }
     filter = filter.replace("&", "?");
 
-    return this.http.get<Invitation[]>(this.url + filter, {headers: this.getHttpHeaders() })
-    .pipe(
-      tap(),
-      catchError(this.handleError<Invitation[]>("Get Filtered Invitations", []))
-    );
+    return this.http.get<Invitation[]>(this.url + filter, { headers: this.getHttpHeaders() })
+      .pipe(
+        tap(),
+        catchError(this.handleError<Invitation[]>("Get Filtered Invitations", []))
+      );
   }
 
   getInvitationById(id: number): Observable<Invitation> {
@@ -65,7 +67,7 @@ export class InvitationService {
 
   getNewUserCode(): Observable<Invitation> {
     const url = `${this.url}/UserCode`;
-    return this.http.get<Invitation>(url, {headers: this.getHttpHeaders() }).pipe(
+    return this.http.get<Invitation>(url, { headers: this.getHttpHeaders() }).pipe(
       tap(),
       catchError(this.handleError<Invitation>(`Get new User Code.`))
     );
@@ -74,7 +76,7 @@ export class InvitationService {
   /* PUT Update Invitation */
   updateInvitation(id: number, invitation: InvitationRequest): Observable<Invitation> {
     const url = `${this.url}/${id}`;
-    return this.http.put<Invitation>(url, invitation, {headers: this.getHttpHeaders() }).pipe(
+    return this.http.put<Invitation>(url, invitation, { headers: this.getHttpHeaders() }).pipe(
       tap(),
       catchError(this.handleError<Invitation>('Update Invitation'))
     );

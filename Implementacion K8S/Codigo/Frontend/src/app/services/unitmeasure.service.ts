@@ -20,10 +20,12 @@ export class UnitMeasureService {
   getHttpHeaders(): HttpHeaders {
     let login = JSON.parse(this.storageManager.getLogin());
     let token = login ? login.token : "";
+      let userName = login ? login.userName : "";
     
     return new HttpHeaders()
       .set('Content-Type', 'application/json')
-      .set('Authorization', token);
+      .set('Authorization', token)
+      .set('X-User-Id', userName);
   }
 
   /** GET Unit Measure from the server */

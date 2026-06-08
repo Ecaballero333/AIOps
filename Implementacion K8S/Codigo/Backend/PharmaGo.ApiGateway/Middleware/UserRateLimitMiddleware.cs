@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using System.Net;
+using Instrumentation;
 
 namespace PharmaGo.ApiGateway.Middleware
 {
@@ -12,39 +13,58 @@ namespace PharmaGo.ApiGateway.Middleware
         private readonly RequestDelegate _next;
         private readonly IMemoryCache _cache;
         private readonly ILogger<UserRateLimitMiddleware> _logger;
-        
+
         // Configuración
-        private const int MaxRequestsPerMinute = 100;
-        private const int MaxRequestsPerHour = 1000;
+        private readonly int _maxRequestsPerMinute;
+        private readonly int _maxRequestsPerHour;
 
         public UserRateLimitMiddleware(
-            RequestDelegate next, 
+            RequestDelegate next,
             IMemoryCache cache,
-            ILogger<UserRateLimitMiddleware> logger)
+            ILogger<UserRateLimitMiddleware> logger,
+            IConfiguration configuration)
         {
             _next = next;
             _cache = cache;
             _logger = logger;
+            _maxRequestsPerMinute = configuration.GetValue("RateLimiting:MaxRequestsPerMinute", 100);
+            _maxRequestsPerHour = configuration.GetValue("RateLimiting:MaxRequestsPerHour", 1000);
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
             // Obtener identificador del usuario (token o IP como fallback)
             var identifier = GetUserIdentifier(context);
-            
+
+            // Obtener Correlation ID para logging
+            var correlationId = context.Items.TryGetValue(
+                CorrelationIdMiddlewareExtensions.HttpContextItemKey,
+                out var value)
+                ? value?.ToString()
+                : context.Request.Headers["X-Correlation-ID"].FirstOrDefault();
+
             // Verificar límites
             if (!CheckRateLimit(identifier, out string reason))
             {
-                _logger.LogWarning(
-                    "Rate limit exceeded for {Identifier}: {Reason}",
-                    identifier,
-                    reason
-                );
-                                
+                using (_logger.BeginScope(new Dictionary<string, object>
+                {
+                    ["correlation_id"] = correlationId ?? "",
+                    ["component"] = "ApiGateway",
+                    ["operation"] = "rate_limit",
+                    ["identifier"] = identifier,
+                    ["reason"] = reason,
+                    ["http_method"] = context.Request.Method,
+                    ["request_path"] = context.Request.Path.Value ?? "",
+                    ["status_code"] = StatusCodes.Status429TooManyRequests
+                }))
+                {
+                    _logger.LogWarning("Rate limit exceeded");
+                }
+
                 context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
                 context.Response.Headers.Add("X-RateLimit-Reason", reason);
-                await context.Response.WriteAsJsonAsync(new 
-                { 
+                await context.Response.WriteAsJsonAsync(new
+                {
                     error = "Too many requests",
                     message = reason,
                     retryAfter = "60 seconds"
@@ -55,28 +75,32 @@ namespace PharmaGo.ApiGateway.Middleware
             await _next(context);
         }
 
+        /// <summary>
+        /// Obtiene un identificador único para el usuario basado 
+        /// en el user que se envía en los headers, el token de autenticación 
+        /// o la IP como fallback.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
         private string GetUserIdentifier(HttpContext context)
         {
-            // 1. Intentar obtener token de autorización
+            if (context.Request.Headers.TryGetValue("X-User-Id", out var userId)
+                && !string.IsNullOrWhiteSpace(userId))
+            {
+                return $"user:{userId}";
+            }
+
             if (context.Request.Headers.TryGetValue("Authorization", out var authHeader))
             {
                 var token = authHeader.ToString().Replace("Bearer ", "");
                 if (!string.IsNullOrEmpty(token))
                 {
-                    return $"user:{token.Substring(0, Math.Min(8, token.Length))}"; // Usar primeros 8 chars
+                    return $"token:{token.Substring(0, Math.Min(8, token.Length))}";
                 }
             }
 
-            // 2. Intentar obtener X-User-Id (si el frontend lo envía)
-            if (context.Request.Headers.TryGetValue("X-User-Id", out var userId))
-            {
-                return $"user:{userId}";
-            }
-
-            // 3. Fallback a IP (para endpoints públicos como login)
             var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            
-            // Si viene de un proxy, intentar obtener la IP real
+
             if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
             {
                 ip = forwardedFor.ToString().Split(',')[0].Trim();
@@ -92,7 +116,7 @@ namespace PharmaGo.ApiGateway.Middleware
         private bool CheckRateLimit(string identifier, out string reason)
         {
             var now = DateTime.UtcNow;
-            
+
             // Verificar límite por minuto
             var minuteKey = $"{identifier}:minute:{now:yyyyMMddHHmm}";
             var minuteCount = _cache.GetOrCreate(minuteKey, entry =>
@@ -101,9 +125,9 @@ namespace PharmaGo.ApiGateway.Middleware
                 return 0;
             });
 
-            if (minuteCount >= MaxRequestsPerMinute)
+            if (minuteCount >= _maxRequestsPerMinute)
             {
-                reason = $"Exceeded {MaxRequestsPerMinute} requests per minute";
+                reason = $"Exceeded {_maxRequestsPerMinute} requests per minute";
                 return false;
             }
 
@@ -115,9 +139,9 @@ namespace PharmaGo.ApiGateway.Middleware
                 return 0;
             });
 
-            if (hourCount >= MaxRequestsPerHour)
+            if (hourCount >= _maxRequestsPerHour)
             {
-                reason = $"Exceeded {MaxRequestsPerHour} requests per hour";
+                reason = $"Exceeded {_maxRequestsPerHour} requests per hour";
                 return false;
             }
 
