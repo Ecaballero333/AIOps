@@ -170,32 +170,17 @@ disponibilidad, mantenibilidad, observabilidad o desplegabilidad.
 **_Comentario de la rúbrica (Resultados esperados):_** _Se debe realizar un plan de mitigación
 de incidentes operacionales que implemente todas las fases del framework de Atlassian._
 
-### Desafíos enfrentados
+El plan se define para PharmaGo desplegado en Kubernetes, asumiendo un equipo operativo ampliado con PL y TL disponibles como primer nivel de escalamiento. El equipo base del obligatorio rota la guardia semanalmente mediante Opsgenie: el integrante on-call recibe alertas, valida el impacto inicial y activa el incidente si corresponde. Para la ejecución del plan se asignan roles explícitos: Eduardo Caballero actúa como Incident Commander, Santiago Martorell como responder técnico principal y Eric Poplawski como Communications Lead/Scribe. La comunicación escrita se centraliza en Slack y la war room se realiza en Google Meet, usando las licencias de Google Gemini para generar notas de la reunión, registrar decisiones y apoyar la construcción del timeline.
 
-Describir los principales desafíos técnicos y operacionales encontrados al implementar este
-punto, incluyendo decisiones, restricciones del stack, problemas de integración y trade-offs
-relevantes.
+El plan implementa las cinco fases del framework de Atlassian. En **Prepare**, se definen roles, severidades y playbooks. Las severidades son P0 cuando PharmaGo no permite operaciones críticas como login, consulta de medicamentos o compras; P1 cuando existe degradación severa, errores 500 o latencia alta con impacto parcial; y P2 cuando la afectación es menor o existe workaround claro. Los playbooks priorizados cubren rollback de despliegue, reinicio de pods, revisión de estado de deployments, consulta de logs por `trace_id`, validación de rate limiting y revisión de conectividad con base de datos. Como evidencia operativa se mantiene el template de incidente y postmortem en `Doc_Obligatorio/templates/incident-report-template.md`, que debe completarse durante y después de cada incidente.
 
-### Implementación realizada
+En **Detect**, la detección se apoya en Prometheus, Grafana, Kibana y Opsgenie. Las alertas de Grafana notifican al on-call por Opsgenie ante condiciones como `PharmaGo - Latencia promedio > 1000ms`, `PharmaGo - Errores HTTP 500 > 5 en 5m`, `PharmaGo - Rate limit HTTP 429 > 10 en 5m`, `PharmaGo - Alta Tasa de Error > 1%`, `PharmaGo - CPU alta > 80%`, `PharmaGo - Memoria alta > 85%` y `PharmaGo - Eventos de negocio fallidos > 5 en 5m`. Para reducir el MTTD, el on-call revisa los dashboards `PharmaGo - Overview`, `PharmaGo - Infra`, `PharmaGo - Endpoint Analysis`, `PharmaGo - Business` y `PharmaGo - SLIs SLOs`, junto con logs estructurados en Kibana correlacionados por `trace_id`.
 
-Explicar qué se implementó, dónde se encuentra en el repositorio y cómo se integra con el
-resto de la plataforma. Incluir comandos, configuración o fragmentos relevantes cuando ayuden
-a reproducir el resultado.
+En **Respond**, el on-call confirma el incidente, registra hora de inicio, severidad, servicio afectado y síntomas observados. Si el impacto es P0 o P1 se abre inmediatamente la war room en Google Meet, el Incident Commander coordina las decisiones y el Communications Lead mantiene informados a los stakeholders por Slack. Si el equipo no puede mitigar con los playbooks disponibles, el primer nivel de escalamiento es PL/TL. Durante esta fase se evita dispersar decisiones fuera de la war room y se documentan las hipótesis, comandos ejecutados, cambios aplicados y resultados observados.
 
-### Resultados obtenidos
+En **Recover**, el objetivo es restaurar el servicio y reducir el MTTRestore. Las acciones de mitigación incluyen rollback a una versión estable, reinicio controlado de pods, escalado de réplicas, ajuste temporal de recursos, validación de servicios Kubernetes, revisión de conectividad con SQL Server y, si corresponde, degradación controlada de funciones no críticas. La recuperación se valida con dashboards de Grafana, confirmando que la latencia, tasa de errores, CPU, memoria y eventos de negocio vuelven a rangos normales, y con Kibana, verificando que no persistan errores correlacionados por `trace_id`. El incidente se considera recuperado cuando las funcionalidades críticas de PharmaGo vuelven a operar y no hay alertas activas asociadas.
 
-Reportar el comportamiento observado, mediciones obtenidas y evidencia de cumplimiento
-frente a lo esperado por la rúbrica. Cuando corresponda, relacionar los resultados con MTTR,
-disponibilidad, mantenibilidad, observabilidad o desplegabilidad.
-
-### Evidencia a incluir
-
-● Descripción de fases del framework de Atlassian aplicadas al contexto del sistema.
-● Roles y responsabilidades durante el incidente.
-● Canales de comunicación y escalamiento.
-● Criterios de severidad y priorización.
-● Runbooks o pasos de mitigación.
-● Formato de postmortem y acciones correctivas.
+En **Learn**, se realiza un postmortem blameless usando el mismo template del incidente. La revisión identifica causa raíz, impacto, señales detectadas, acciones que funcionaron, puntos de fricción y mejoras para aumentar el MTBF. Las acciones correctivas pueden incluir nuevas alertas, ajuste de umbrales, mejoras en dashboards, ampliación de logs estructurados, automatización de runbooks o cambios en Kubernetes. Cada acción queda con responsable, fecha objetivo y criterio de validación, cerrando el ciclo de aprendizaje continuo.
 
 
 ## 7. Scripts de caos
@@ -238,5 +223,4 @@ disponibilidad, mantenibilidad, observabilidad o desplegabilidad.
 Sintetizar el impacto global de las prácticas implementadas sobre la respuesta a incidentes, la
 disponibilidad, la desplegabilidad y la mantenibilidad del sistema. Incluir una reflexión breve
 sobre qué funcionó bien, qué limitaciones quedaron y qué mejoras futuras serían prioritarias.
-
 

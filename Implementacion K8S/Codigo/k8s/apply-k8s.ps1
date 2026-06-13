@@ -48,6 +48,9 @@ kubectl apply -f configmaps\otel-collector-config.yaml
 kubectl apply -f configmaps\grafana-provisioning.yaml
 kubectl apply -f configmaps\grafana-dashboards.yaml
 kubectl apply -f configmaps\grafana-dashboard-infra.yaml
+kubectl apply -f configmaps\grafana-dashboard-business.yaml
+kubectl apply -f configmaps\grafana-dashboard-endpoints.yaml
+kubectl apply -f configmaps\grafana-dashboard-slo.yaml
 kubectl apply -f configmaps\fluent-bit-config.yaml
 if ($LASTEXITCODE -ne 0) { exit 1 }
 

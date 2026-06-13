@@ -27,7 +27,7 @@ data:
                     type: prometheus
                     uid: prometheus
                   editorMode: code
-                  expr: sum(increase(pharmago_business_events_total_1{outcome="failed"}[5m]))
+                  expr: sum(increase({__name__=~"pharmago_business_events_total(_1)?",outcome="failed"}[5m]))
                   instant: true
                   intervalMs: 1000
                   maxDataPoints: 43200
@@ -75,10 +75,10 @@ data:
             for: 0m
             annotations:
               summary: Mas de 5 eventos de negocio fallidos en los ultimos 5 minutos.
-              description: La metrica pharmago_business_events_total_1 con outcome="failed" supero el umbral configurado.
+              description: La metrica pharmago_business_events_total con outcome="failed" supero el umbral configurado.
               dashboardUid: pharmago-business
             labels:
               service: pharmago
               domain: business
-              metric: pharmago_business_events_total_1
+              metric: pharmago_business_events_total
               severity: warning
