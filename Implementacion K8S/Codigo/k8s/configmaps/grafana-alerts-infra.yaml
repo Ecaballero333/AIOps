@@ -174,6 +174,82 @@ data:
                 severity: warning
               isPaused: false
 
+            - uid: pharmago-pharmacy-storage-writes-high
+              title: PharmaGo - Pharmacy ephemeral storage writes > 90%
+              condition: C
+              data:
+                - refId: A
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: prometheus
+                  model:
+                    datasource:
+                        type: prometheus
+                        uid: prometheus
+                    editorMode: code
+                    expr: 100 * sum by (pod) (container_fs_writes_bytes_total{namespace="pharmago", pod=~"pharmago-pharmacy-service.*", device="/dev/sde"}) / 1024 / 1024 / 128
+                    instant: true
+                    intervalMs: 1000
+                    legendFormat: "{{pod}}"
+                    maxDataPoints: 43200
+                    range: false
+                    refId: A
+                - refId: B
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: A
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    reducer: last
+                    refId: B
+                    type: reduce
+                - refId: C
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                        - evaluator:
+                            params:
+                                - 90
+                            type: gt
+                          operator:
+                            type: and
+                          query:
+                            params:
+                                - C
+                          reducer:
+                            params: []
+                            type: last
+                          type: query
+                    datasource:
+                        type: __expr__
+                        uid: __expr__
+                    expression: B
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: C
+                    type: threshold
+              noDataState: OK
+              execErrState: Error
+              for: 0m
+              annotations:
+                summary: Pharmacy service supero el 90% del limite aproximado de ephemeral storage
+                description: Basado en escrituras acumuladas por pod sobre un limite declarado de 128Mi.
+              labels:
+                domain: infra
+                service: pharmago-pharmacy-service
+                severity: warning
+              isPaused: false
+
         - orgId: 1
           name: API
           folder: PharmaGo

@@ -76,6 +76,9 @@ spec:
         - name: grafana-dashboard-slo
           mountPath: /etc/grafana/provisioning/dashboards/pharmago-slo.json
           subPath: pharmago-slo.json
+        - name: grafana-dashboard-storage
+          mountPath: /etc/grafana/provisioning/dashboards/pharmago-storage.json
+          subPath: pharmago-storage.json
         - name: grafana-alerts-business
           mountPath: /etc/grafana/provisioning/alerting/business-alerts.yaml
           subPath: business-alerts.yaml
@@ -132,6 +135,9 @@ spec:
       - name: grafana-dashboard-slo
         configMap:
           name: grafana-dashboard-slo
+      - name: grafana-dashboard-storage
+        configMap:
+          name: grafana-dashboard-storage
       - name: grafana-alerts-business
         configMap:
           name: grafana-alerts-business
