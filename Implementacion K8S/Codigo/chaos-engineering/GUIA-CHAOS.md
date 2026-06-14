@@ -8,6 +8,12 @@ Genera muchas requests `POST` concurrentes contra `/api/login` o contra la URL i
 
 Revisar los dashboards `PharmaGo - Overview`, `PharmaGo - Endpoint Analysis` y `PharmaGo - Business`. Las alertas esperadas son `PharmaGo - Rate limit HTTP 429 > 10 en 5m`, `PharmaGo - Alta Tasa de Error > 1%`, `PharmaGo - Latencia promedio > 1000ms` y, si los login fallidos generan eventos de negocio, `PharmaGo - Eventos de negocio fallidos > 5 en 5m`. Se resuelve esperando a que termine el script o reduciendo la cantidad de requests; si algun pod queda degradado, se puede recrear con `kubectl delete pod -n pharmago <pod>`.
 
+## `app-latency-ramp.sh`
+
+Activa una latencia artificial dentro de la aplicacion escribiendo archivos de control en `/tmp` dentro de los pods del deployment elegido. Como el delay ocurre dentro del middleware de metricas, se ve en `pharmago_http_request_duration_milliseconds_ms_*` y en el panel `Latencia Promedio por Endpoint`.
+
+El perfil default sube y baja la latencia en pasos de 15 segundos y termina dejando una degradacion fuerte de 5000 ms: `500,1000,1500,2000,3000,4000,2500,1500,3000,1000,5000`. Por defecto no afecta `/health` para que Kubernetes no saque los pods del Service y Prometheus pueda seguir recolectando metricas durante toda la demo. Si se quiere mostrar tambien el efecto en readiness, ejecutar con `include_health=true`; al superar el timeout del probe, los pods pueden pasar a `NotReady`.
+
 ## `cpu-spike.sh`
 
 Ejecuta loops dentro de un pod para consumir CPU durante una cantidad de segundos. Sirve para probar sobrecarga de CPU en un deployment, por ejemplo `pharmago-api-gateway`, y observar si aparecen throttling, aumento de latencia o timeouts. Las metricas principales son CPU por pod, CPU del nodo, latencia promedio y tasa de error.
@@ -31,6 +37,12 @@ Revisar `PharmaGo - Infra`, especialmente `Disco disponible %`. Se resuelve elim
 Aplica una `NetworkPolicy` temporal que bloquea ingreso y salida de red del deployment indicado. Sirve para probar interrupcion de trafico de red: el componente queda aislado, no recibe requests y tampoco puede llamar a otros servicios. Si se aplica al API Gateway, la aplicacion puede quedar inaccesible durante la prueba.
 
 Revisar `PharmaGo - Overview`, `PharmaGo - Endpoint Analysis` y `PharmaGo - SLIs SLOs`, observando throughput, tasa de error, latencia, availability y status codes. Las alertas esperadas son `PharmaGo - Alta Tasa de Error > 1%` y `PharmaGo - Latencia promedio > 1000ms`, siempre que haya trafico durante el corte. Se resuelve automaticamente al finalizar; si se interrumpe el script, borrar la policy con `kubectl delete networkpolicy -n pharmago chaos-deny-network-<deployment>`.
+
+## `pharmacy-network-latency.sh`
+
+Agrega latencia con `tc netem` sobre `eth0` en un solo pod de `pharmago-pharmacy-service`. Sirve para demostrar una falla temporal donde `/health` tarda mas que el `timeoutSeconds` del readiness probe, Kubernetes marca ese pod como `NotReady` y el Service deja de incluirlo en sus endpoints mientras el otro pod sano sigue atendiendo.
+
+Requiere que la imagen de Pharmacy tenga `iproute2` instalado y que el contenedor tenga la capability `NET_ADMIN`. El script valida ambas cosas antes de aplicar el caos. Al final pregunta si se quiere restituir la red; si se responde que no, la latencia queda activa hasta ejecutar el comando de restauracion que imprime el script o hasta recrear el pod.
 
 ## `disconnect-component.sh`
 

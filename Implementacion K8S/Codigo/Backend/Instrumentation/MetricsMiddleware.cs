@@ -13,6 +13,9 @@ namespace Instrumentation
     /// </summary>
     public class MetricsMiddleware
     {
+        private const string DefaultLatencyFile = "/tmp/pharmago-chaos-latency-ms";
+        private const string DefaultIncludeHealthFile = "/tmp/pharmago-chaos-include-health";
+
         private readonly RequestDelegate _next;
         private readonly ICustomMetrics _metrics;
 
@@ -30,6 +33,12 @@ namespace Instrumentation
 
             try
             {
+                var latencyMs = GetConfiguredLatencyMs();
+                if (latencyMs > 0 && ShouldDelayEndpoint(endpoint))
+                {
+                    await Task.Delay(latencyMs, context.RequestAborted);
+                }
+
                 await _next(context);
                 stopwatch.Stop();
 
@@ -56,6 +65,57 @@ namespace Instrumentation
 
                 // Re-lanzar la excepción para que sea manejada por otros middlewares
                 throw;
+            }
+        }
+
+        private static int GetConfiguredLatencyMs()
+        {
+            var path = Environment.GetEnvironmentVariable("PHARMAGO_CHAOS_LATENCY_FILE") ?? DefaultLatencyFile;
+            if (!File.Exists(path))
+            {
+                return 0;
+            }
+
+            try
+            {
+                var rawValue = File.ReadAllText(path).Trim();
+                return int.TryParse(rawValue, out var latencyMs) && latencyMs > 0 ? latencyMs : 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private static bool ShouldDelayEndpoint(string endpoint)
+        {
+            if (endpoint.Equals("/metrics", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!endpoint.Equals("/health", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var path = Environment.GetEnvironmentVariable("PHARMAGO_CHAOS_INCLUDE_HEALTH_FILE") ?? DefaultIncludeHealthFile;
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                var rawValue = File.ReadAllText(path).Trim();
+                return rawValue.Equals("true", StringComparison.OrdinalIgnoreCase)
+                    || rawValue.Equals("1", StringComparison.OrdinalIgnoreCase)
+                    || rawValue.Equals("yes", StringComparison.OrdinalIgnoreCase)
+                    || rawValue.Equals("si", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
             }
         }
     }

@@ -30,6 +30,10 @@ spec:
       - name: pharmago-pharmacy-service
         image: pharmago-pharmacy-service:latest
         imagePullPolicy: Never
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
         ports:
         - containerPort: 80
         env:
