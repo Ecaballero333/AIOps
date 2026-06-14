@@ -14,7 +14,7 @@ data:
         interval: 1m
         rules:
           - uid: pharmago-business-events-failed-gt-5-5m
-            title: PharmaGo - Eventos de negocio fallidos > 5 en 5m
+            title: PharmaGo - Eventos de negocio fallidos > 100 en 5m
             condition: C
             data:
               - refId: A
@@ -57,7 +57,7 @@ data:
                   conditions:
                     - evaluator:
                         params:
-                          - 5
+                          - 100
                         type: gt
                       operator:
                         type: and
@@ -74,7 +74,7 @@ data:
             execErrState: Error
             for: 0m
             annotations:
-              summary: Mas de 5 eventos de negocio fallidos en los ultimos 5 minutos.
+              summary: Mas de 100 eventos de negocio fallidos en los ultimos 5 minutos.
               description: La metrica pharmago_business_events_total con outcome="failed" supero el umbral configurado.
               dashboardUid: pharmago-business
             labels:

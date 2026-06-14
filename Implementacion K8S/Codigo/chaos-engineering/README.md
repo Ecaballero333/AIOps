@@ -4,7 +4,7 @@ Requiere: app en K8s + port-forward activo.
 
 | Script | Uso |
 |--------|-----|
-| `cpu-spike.sh` | `./cpu-spike.sh [deploy] [seg]` |
+| `cpu-spike.sh` | `./cpu-spike.sh [--scope all|pod|deploy] [--target pod/app] [--intensity low|medium|high]` |
 | `ram-spike.sh` | `./ram-spike.sh [deploy] [MB]` |
 | `volume-spike.sh` | `./volume-spike.sh [deploy] [MB]` |
 | `load-requests.sh` | `./load-requests.sh [N] [url]` |
@@ -27,6 +27,40 @@ Default deploy: pharmago-api-gateway
 | Desconexion de componentes internos | `disconnect-component.sh` |
 
 **Ver impacto en Grafana:** Dashboard "PharmaGo - Infra" → paneles "CPU por pod (pharmago)" y "Memoria por pod (pharmago)".
+
+## Chaos de CPU
+
+`cpu-spike.sh` abre un menu interactivo para decidir el alcance del ataque:
+
+```text
+1) Todas las instancias de todos los servicios PharmaGo
+2) Una instancia/pod particular, copiando y pegando el nombre
+3) Todas las instancias de un servicio/deployment
+```
+
+Tambien permite elegir intensidad:
+
+```text
+low     ~50% de 1 core
+medium  ~75% de 1 core
+high    ~95% de 1 core, buscando superar 90%
+```
+
+Uso interactivo:
+
+```sh
+./cpu-spike.sh
+```
+
+Uso parametrizado:
+
+```sh
+./cpu-spike.sh --scope all --intensity high
+./cpu-spike.sh --scope pod --target pharmago-api-gateway-xxxxx --intensity medium
+./cpu-spike.sh --scope deploy --target pharmago-users-service --intensity low
+```
+
+El script queda corriendo hasta que lo cortes con `Ctrl+C`. Al finalizar ejecuta cleanup remoto y mata el loop de CPU controlado que creo en cada pod. Para ver 75% o 90% en el dashboard actual, los deployments backend tienen que permitir `limits.cpu: "1000m"`.
 
 ## Chaos de metricas de negocio
 
