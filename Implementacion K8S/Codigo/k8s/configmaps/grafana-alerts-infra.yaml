@@ -24,7 +24,7 @@ data:
                   model:
                     disableTextWrap: false
                     editorMode: code
-                    expr: avg by (service) (label_replace(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service)-.*"}[5m])) * 100, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+"))
+                    expr: avg by (service) (label_replace(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service|ui)-.*"}[5m])) * 100, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+"))
                     fullMetaSearch: false
                     includeNullMetadata: true
                     instant: true
@@ -115,7 +115,7 @@ data:
                         type: prometheus
                         uid: prometheus
                     editorMode: code
-                    expr: 100 * sum by (service) (label_replace(container_memory_working_set_bytes{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service)-.*"}, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+")) / sum by (service) (label_replace(container_spec_memory_limit_bytes{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service)-.*"} > 0, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+"))
+                    expr: 100 * sum by (service) (label_replace(container_memory_working_set_bytes{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service|ui)-.*"}, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+")) / sum by (service) (label_replace(container_spec_memory_limit_bytes{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service|ui)-.*"} > 0, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+"))
                     instant: true
                     intervalMs: 1000
                     maxDataPoints: 43200

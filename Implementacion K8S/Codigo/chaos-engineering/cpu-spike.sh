@@ -59,7 +59,7 @@ target_for_intensity() {
 
 list_service_pods() {
   kubectl get pods -n "$NAMESPACE" \
-    -l 'app in (pharmago-api-gateway,pharmago-users-service,pharmago-pharmacy-service)' \
+    -l 'app in (pharmago-api-gateway,pharmago-users-service,pharmago-pharmacy-service,pharmago-ui)' \
     -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null
 }
 
@@ -91,7 +91,7 @@ menu() {
       ;;
     3)
       SCOPE=deploy
-      echo "Servicios comunes: pharmago-api-gateway, pharmago-users-service, pharmago-pharmacy-service"
+      echo "Servicios comunes: pharmago-api-gateway, pharmago-users-service, pharmago-pharmacy-service, pharmago-ui"
       printf 'Ingrese app/deployment: '
       read TARGET
       ;;
