@@ -47,6 +47,7 @@ kubectl apply -f configmaps/grafana-dashboard-infra.yaml
 kubectl apply -f configmaps/grafana-dashboard-business.yaml
 kubectl apply -f configmaps/grafana-dashboard-endpoints.yaml
 kubectl apply -f configmaps/grafana-dashboard-slo.yaml
+kubectl apply -f configmaps/grafana-dashboard-storage.yaml
 kubectl apply -f configmaps/grafana-alerts-business.yaml
 kubectl apply -f configmaps/grafana-alerts-infra.yaml
 kubectl apply -f configmaps/fluent-bit-config.yaml
