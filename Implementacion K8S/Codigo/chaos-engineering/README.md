@@ -9,7 +9,9 @@ Requiere: app en K8s + port-forward activo.
 | `volume-spike.sh` | `./volume-spike.sh [deploy] [MB]` |
 | `load-requests.sh` | `./load-requests.sh [N] [url]` |
 | `business-metrics-chaos.sh` | `./business-metrics-chaos.sh [-f funcionalidad] [-e yes|no|mixed] [-n cantidad] [-d ms]` |
+| `app-latency-ramp.sh` | `./app-latency-ramp.sh [deploy] [namespace] [seconds_per_step] [profile] [include_health]` |
 | `network-interruption.sh` | `./network-interruption.sh [deploy] [seg] [namespace]` |
+| `pharmacy-network-latency.sh` | `./pharmacy-network-latency.sh [delay_ms] [namespace] [deployment]` |
 | `disconnect-component.sh` | `./disconnect-component.sh [deploy] [seg] [namespace]` |
 
 Default deploy: pharmago-api-gateway
@@ -23,7 +25,9 @@ Default deploy: pharmago-api-gateway
 | Sobrecarga de CPU | `cpu-spike.sh` |
 | Sobrecarga de memoria | `ram-spike.sh` |
 | Sobrecarga de storage | `volume-spike.sh` |
+| Latencia progresiva medida por la app | `app-latency-ramp.sh` |
 | Interrupcion de trafico de red | `network-interruption.sh` |
+| Latencia de red en Pharmacy/readiness | `pharmacy-network-latency.sh` |
 | Desconexion de componentes internos | `disconnect-component.sh` |
 
 **Ver impacto en Grafana:** Dashboard "PharmaGo - Infra" → paneles "CPU por pod (pharmago)" y "Memoria por pod (pharmago)".

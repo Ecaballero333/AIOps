@@ -30,6 +30,10 @@ spec:
       - name: pharmago-pharmacy-service
         image: pharmago-pharmacy-service:latest
         imagePullPolicy: Never
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
         ports:
         - containerPort: 80
         env:
@@ -48,9 +52,11 @@ spec:
           requests:
             memory: "128Mi"
             cpu: "100m"
+            ephemeral-storage: "64Mi"
           limits:
             memory: "384Mi"
             cpu: "1000m"
+            ephemeral-storage: "128Mi"
         startupProbe:
           httpGet:
             path: /health
