@@ -12,6 +12,7 @@ Requiere: app en K8s + port-forward activo.
 | `network-interruption.sh` | `./network-interruption.sh [deploy] [seg] [namespace]` |
 | `pharmacy-network-latency.sh` | `./pharmacy-network-latency.sh [delay_ms] [namespace] [deployment]` |
 | `disconnect-component.sh` | `./disconnect-component.sh [deploy] [seg] [namespace]` |
+| `disconnect-db-service.sh` | `./disconnect-db-service.sh [service] [namespace] [app_label_original]` |
 
 Default deploy: pharmago-api-gateway
 
@@ -27,5 +28,6 @@ Default deploy: pharmago-api-gateway
 | Interrupcion de trafico de red | `network-interruption.sh` |
 | Latencia de red en Pharmacy/readiness | `pharmacy-network-latency.sh` |
 | Desconexion de componentes internos | `disconnect-component.sh` |
+| BD corriendo pero sin endpoints en el Service | `disconnect-db-service.sh` |
 
 **Ver impacto en Grafana:** Dashboard "PharmaGo - Infra" → paneles "CPU por pod (pharmago)" y "Memoria por pod (pharmago)".
