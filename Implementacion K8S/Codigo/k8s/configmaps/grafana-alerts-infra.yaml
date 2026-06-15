@@ -13,7 +13,7 @@ data:
           interval: 1m
           rules:
             - uid: ffnrfmrjbe6m8d
-              title: PharmaGo - CPU alta > 80%
+              title: PharmaGo - CPU alta por servicio > 80%
               condition: C
               data:
                 - refId: A
@@ -23,8 +23,8 @@ data:
                   datasourceUid: prometheus
                   model:
                     disableTextWrap: false
-                    editorMode: builder
-                    expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+                    editorMode: code
+                    expr: avg by (service) (label_replace(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service|ui)-.*"}[5m])) * 100, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+"))
                     fullMetaSearch: false
                     includeNullMetadata: true
                     instant: true
@@ -92,16 +92,17 @@ data:
                     type: threshold
               noDataState: NoData
               execErrState: Error
-              for: 1m
-              annotations: {}
+              for: 5m
+              annotations:
+                summary: CPU alta en servicio {{ $labels.service }}
               labels:
                 domain: infra
-                service: pharmago
+                scope: service
                 severity: warning
               isPaused: false
 
             - uid: pharmago-memory-high
-              title: PharmaGo - Memoria alta > 85%
+              title: PharmaGo - Memoria alta por servicio > 80%
               condition: C
               data:
                 - refId: A
@@ -114,7 +115,7 @@ data:
                         type: prometheus
                         uid: prometheus
                     editorMode: code
-                    expr: 100 * (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes)))
+                    expr: 100 * sum by (service) (label_replace(container_memory_working_set_bytes{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service|ui)-.*"}, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+")) / sum by (service) (label_replace(container_spec_memory_limit_bytes{namespace="pharmago",pod=~"pharmago-(api-gateway|users-service|pharmacy-service|ui)-.*"} > 0, "service", "$1", "pod", "(pharmago-[a-z-]+)-[a-f0-9]+-[a-z0-9]+"))
                     instant: true
                     intervalMs: 1000
                     maxDataPoints: 43200
@@ -144,7 +145,7 @@ data:
                     conditions:
                         - evaluator:
                             params:
-                                - 85
+                                - 80
                             type: gt
                           operator:
                             type: and
@@ -167,10 +168,10 @@ data:
               execErrState: Error
               for: 1m
               annotations:
-                summary: Memoria alta en PharmaGo
+                summary: Memoria alta en servicio {{ $labels.service }}
               labels:
                 domain: infra
-                service: pharmago
+                scope: service
                 severity: warning
               isPaused: false
 
