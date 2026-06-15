@@ -102,7 +102,7 @@ data:
               isPaused: false
 
             - uid: pharmago-memory-high
-              title: PharmaGo - Memoria alta por servicio > 85%
+              title: PharmaGo - Memoria alta por servicio > 80%
               condition: C
               data:
                 - refId: A
@@ -145,7 +145,7 @@ data:
                     conditions:
                         - evaluator:
                             params:
-                                - 85
+                                - 80
                             type: gt
                           operator:
                             type: and

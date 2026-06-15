@@ -5,7 +5,7 @@ Requiere: app en K8s + port-forward activo.
 | Script | Uso |
 |--------|-----|
 | `cpu-spike.sh` | `./cpu-spike.sh [--scope all|pod|deploy] [--target pod/app] [--intensity low|medium|high]` |
-| `ram-spike.sh` | `./ram-spike.sh [deploy] [MB]` |
+| `ram-spike.sh` | `./ram-spike.sh [--scope all|pod|deploy] [--target pod/app] [--intensity low|medium|high|oom] [--safety-mb MB]` |
 | `volume-spike.sh` | `./volume-spike.sh [deploy] [MB]` |
 | `load-requests.sh` | `./load-requests.sh [N] [url]` |
 | `business-metrics-chaos.sh` | `./business-metrics-chaos.sh [-f funcionalidad] [-e yes|no|mixed] [-n cantidad] [-d ms]` |
@@ -120,3 +120,44 @@ Notas operativas:
 - Si no hay token en approve/reject, se movera error rate HTTP, pero no necesariamente la metrica de negocio `purchase_status_change` porque el request puede quedar bloqueado por autorizacion antes del controller.
 - Default URL: `http://127.0.0.1:5000`, esperando port-forward del API Gateway.
 - En modo interactivo, el menu pregunta al final si queres imprimir el log de cada request; equivale a usar `--verbose`.
+
+## Chaos de memoria
+
+`ram-spike.sh` abre un menu interactivo para decidir el alcance del ataque:
+
+```text
+1) Todas las instancias de todos los servicios PharmaGo
+2) Una instancia/pod exacto
+3) Todas las instancias de un servicio/deployment
+```
+
+Tambien permite elegir intensidad:
+
+```text
+low     intenta llevar cada pod a ~50% de su limite de memoria
+medium  intenta llevar cada pod a ~75% de su limite de memoria
+high    intenta llevar cada pod a ~86% de su limite de memoria para superar la alerta sin tocar el limite
+oom     relanza rampas de memoria para provocar picos y forzar OOMKilled
+
+Si hay `OOMKilled` en `low`, `medium` o `high`, subir `--safety-mb`; si no supera 80%, bajarlo con cuidado. En `oom`, los picos repetidos y/o `OOMKilled` son el resultado esperado.
+```
+
+Para disparar `PharmaGo - Memoria alta por servicio > 85%`, usar `high` sobre todas las instancias del servicio, porque la alerta evalua consumo total del servicio dividido por limite total del servicio.
+
+Uso interactivo:
+
+```sh
+./ram-spike.sh
+```
+
+Uso parametrizado:
+
+```sh
+./ram-spike.sh --scope all --intensity high
+./ram-spike.sh --scope pod --target pharmago-api-gateway-xxxxx --intensity medium
+./ram-spike.sh --scope deploy --target pharmago-users-service --intensity high
+./ram-spike.sh --scope deploy --target pharmago-api-gateway --intensity high --safety-mb 16
+./ram-spike.sh --scope pod --target pharmago-api-gateway-xxxxx --intensity oom
+```
+
+El script queda corriendo hasta que lo cortes con `Ctrl+C`. Al finalizar ejecuta cleanup remoto y libera la memoria reservada en los pods.
