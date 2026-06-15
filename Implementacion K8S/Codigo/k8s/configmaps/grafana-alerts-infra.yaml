@@ -484,7 +484,7 @@ data:
           interval: 10s
           rules:
             - uid: pharmago-api-endpoint-latency-high
-              title: PharmaGo - Latencia alta por endpoint > 1000ms
+              title: PharmaGo - Latencia alta por endpoint > 1500ms
               condition: C
               data:
                 - refId: A
@@ -528,7 +528,7 @@ data:
                     conditions:
                         - evaluator:
                             params:
-                                - 1000
+                                - 1500
                             type: gt
                           operator:
                             type: and
