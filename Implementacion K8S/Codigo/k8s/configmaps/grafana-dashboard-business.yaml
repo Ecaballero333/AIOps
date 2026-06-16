@@ -113,8 +113,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum by (event, outcome) (increase({__name__=~\"pharmago_business_events_total(_1)?\"}[2m])))",
-              "interval": "2m",
+              "expr": "round(sum by (event, outcome) (increase(pharmago_business_events_total[10s])))",
               "legendFormat": "{{event}} {{outcome}}",
               "refId": "A"
             }
@@ -184,7 +183,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum(increase({__name__=~\"pharmago_business_events_total(_1)?\",outcome=\"failed\"}[$__range])))",
+              "expr": "round(sum(increase(pharmago_business_events_total{outcome=\"failed\"}[$__range])))",
               "instant": true,
               "refId": "A"
             }
@@ -248,7 +247,7 @@ data:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "sum({__name__=~\"pharmago_purchases_created_total(_1)?\"})",
+              "expr": "sum(pharmago_purchases_created_total)",
               "instant": true,
               "refId": "A"
             }
@@ -312,7 +311,7 @@ data:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "sum({__name__=~\"pharmago_purchase_amount_total(_1)?\"})",
+              "expr": "sum(pharmago_purchase_amount_total)",
               "instant": true,
               "refId": "A"
             }
@@ -375,7 +374,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum({__name__=~\"pharmago_purchase_items_total(_1)?\"})",
+              "expr": "sum(pharmago_purchase_items_total)",
               "instant": true,
               "refId": "A"
             }
@@ -468,8 +467,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum by (outcome) (increase({__name__=~\"pharmago_login_attempts_total(_1)?\"}[2m])))",
-              "interval": "2m",
+              "expr": "round(sum by (outcome) (increase(pharmago_login_attempts_total[10s])))",
               "legendFormat": "login {{outcome}}",
               "refId": "A"
             }
@@ -562,8 +560,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum(increase({__name__=~\"pharmago_purchases_created_total(_1)?\"}[2m])))",
-              "interval": "2m",
+              "expr": "round(sum(increase(pharmago_purchases_created_total[10s])))",
               "legendFormat": "compras realizadas",
               "refId": "A"
             }
@@ -661,8 +658,7 @@ data:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "round(sum by (status) (increase({__name__=~\"pharmago_purchase_status_changes_total(_1)?\"}[2m])))",
-              "interval": "2m",
+              "expr": "round(sum by (status) (increase(pharmago_purchase_status_changes_total[10s])))",
               "legendFormat": "{{status}}",
               "range": true,
               "refId": "A"
