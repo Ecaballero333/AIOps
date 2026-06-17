@@ -29,6 +29,7 @@ spec:
       initContainers:
       - name: volume-permissions
         image: busybox:latest
+        imagePullPolicy: IfNotPresent
         command: ['sh', '-c']
         args:
           - |
@@ -42,6 +43,7 @@ spec:
       containers:
       - name: pharmago-db
         image: mcr.microsoft.com/azure-sql-edge:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 1433
         env:
