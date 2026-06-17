@@ -92,7 +92,7 @@ data:
                     type: threshold
               noDataState: NoData
               execErrState: Error
-              for: 5m
+              for: 2m
               annotations:
                 summary: CPU alta en servicio {{ $labels.service }}
               labels:
@@ -166,7 +166,7 @@ data:
                     type: threshold
               noDataState: NoData
               execErrState: Error
-              for: 1m
+              for: 2m
               annotations:
                 summary: Memoria alta en servicio {{ $labels.service }}
               labels:
