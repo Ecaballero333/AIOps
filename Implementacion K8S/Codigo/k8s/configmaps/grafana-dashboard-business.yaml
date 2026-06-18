@@ -44,27 +44,16 @@ data:
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "bars",
-                "fillOpacity": 70,
+                "fillOpacity": 80,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 0,
-                "pointSize": 5,
+                "lineWidth": 1,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
                 },
                 "thresholdsStyle": {
                   "mode": "off"
@@ -83,7 +72,32 @@ data:
               },
               "unit": "none"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "login failed"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 12,
@@ -93,19 +107,25 @@ data:
           },
           "id": 3,
           "options": {
+            "barRadius": 0.15,
+            "barWidth": 1,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "sum"
-              ],
-              "displayMode": "table",
+              "calcs": [],
+              "displayMode": "list",
               "placement": "bottom",
               "showLegend": true
             },
+            "orientation": "auto",
+            "showValue": "auto",
+            "stacking": "none",
             "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 75,
+            "xTickLabelSpacing": 0
           },
           "targets": [
             {
@@ -113,13 +133,20 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum by (event, outcome) (increase(pharmago_business_events_total[10s])))",
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "expr": "sum by (event, outcome) (\r\n  rate(pharmago_business_events_total[1m])\r\n) * 60",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "interval": "1m",
               "legendFormat": "{{event}} {{outcome}}",
-              "refId": "A"
+              "range": true,
+              "refId": "A",
+              "useBackend": false
             }
           ],
           "title": "Eventos de negocio por tipo",
-          "type": "timeseries"
+          "type": "barchart"
         },
         {
           "datasource": {
@@ -133,8 +160,10 @@ data:
               },
               "decimals": 0,
               "mappings": [],
+              "max": 100,
+              "min": 0,
               "thresholds": {
-                "mode": "absolute",
+                "mode": "percentage",
                 "steps": [
                   {
                     "color": "green",
@@ -142,21 +171,21 @@ data:
                   },
                   {
                     "color": "yellow",
-                    "value": 1
+                    "value": ""
                   },
                   {
                     "color": "red",
-                    "value": 5
+                    "value": 15
                   }
                 ]
               },
-              "unit": "none"
+              "unit": "percent"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 4,
-            "w": 8,
+            "w": 4,
             "x": 16,
             "y": 0
           },
@@ -183,13 +212,83 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum(increase(pharmago_business_events_total{outcome=\"failed\"}[$__range])))",
+              "editorMode": "code",
+              "expr": "(\r\n  sum(increase(pharmago_business_events_total{outcome=\"failed\"}[$__range]))\r\n  /\r\n  clamp_min(sum(increase(pharmago_business_events_total[$__range])), 1)\r\n) * 100",
               "instant": true,
               "refId": "A"
             }
           ],
-          "title": "Eventos de negocio fallidos",
+          "title": "% Eventos de negocio fallidos",
           "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 0
+          },
+          "id": 9,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "10.4.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "round(sum(increase(pharmago_business_events_total[$__range])))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Eventos totales",
+          "type": "stat"
         },
         {
           "datasource": {
@@ -398,33 +497,23 @@ data:
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "bars",
-                "fillOpacity": 70,
+                "fillOpacity": 80,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 0,
-                "pointSize": 5,
+                "lineWidth": 1,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
                 },
                 "thresholdsStyle": {
                   "mode": "off"
                 }
               },
               "decimals": 0,
+              "fieldMinMax": false,
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
@@ -447,19 +536,28 @@ data:
           },
           "id": 1,
           "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
             "legend": {
               "calcs": [
                 "lastNotNull",
-                "sum"
+                "max"
               ],
-              "displayMode": "table",
+              "displayMode": "list",
               "placement": "bottom",
               "showLegend": true
             },
+            "orientation": "auto",
+            "showValue": "never",
+            "stacking": "none",
             "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 45,
+            "xTickLabelSpacing": 0
           },
           "targets": [
             {
@@ -467,13 +565,18 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum by (outcome) (increase(pharmago_login_attempts_total[10s])))",
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (outcome) (\r\n  rate(pharmago_login_attempts_total[1m])\r\n) * 60",
+              "instant": false,
+              "interval": "1m",
               "legendFormat": "login {{outcome}}",
+              "range": true,
               "refId": "A"
             }
           ],
           "title": "Intentos de login por resultado",
-          "type": "timeseries"
+          "type": "barchart"
         },
         {
           "datasource": {
@@ -560,8 +663,10 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "round(sum(increase(pharmago_purchases_created_total[10s])))",
+              "editorMode": "code",
+              "expr": "round(sum(increase(pharmago_purchases_created_total[1m])))",
               "legendFormat": "compras realizadas",
+              "range": true,
               "refId": "A"
             }
           ],
@@ -584,27 +689,16 @@ data:
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "bars",
-                "fillOpacity": 70,
+                "fillOpacity": 80,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 0,
-                "pointSize": 5,
+                "lineWidth": 1,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
                 },
                 "thresholdsStyle": {
                   "mode": "off"
@@ -637,19 +731,25 @@ data:
           },
           "id": 7,
           "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "sum"
-              ],
-              "displayMode": "table",
+              "calcs": [],
+              "displayMode": "list",
               "placement": "bottom",
               "showLegend": true
             },
+            "orientation": "auto",
+            "showValue": "auto",
+            "stacking": "none",
             "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 45,
+            "xTickLabelSpacing": 0
           },
           "targets": [
             {
@@ -658,14 +758,17 @@ data:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "round(sum by (status) (increase(pharmago_purchase_status_changes_total[10s])))",
+              "exemplar": false,
+              "expr": "sum by (status) (\r\n  increase(pharmago_purchase_status_changes_total[1m])\r\n)",
+              "instant": false,
+              "interval": "1m",
               "legendFormat": "{{status}}",
               "range": true,
               "refId": "A"
             }
           ],
           "title": "Cambios de estado de compra",
-          "type": "timeseries"
+          "type": "barchart"
         }
       ],
       "refresh": "5s",
@@ -678,7 +781,7 @@ data:
         "list": []
       },
       "time": {
-        "from": "now-30m",
+        "from": "now-1h",
         "to": "now"
       },
       "timepicker": {
@@ -698,6 +801,6 @@ data:
       "timezone": "",
       "title": "PharmaGo - Business",
       "uid": "pharmago-business",
-      "version": 28,
+      "version": 26,
       "weekStart": ""
     }
